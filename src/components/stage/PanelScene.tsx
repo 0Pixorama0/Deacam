@@ -57,7 +57,8 @@ function useModel(url: string, fit: { h?: number; w?: number }, prep?: (root: TH
       phys.clearcoatRoughness = 0.42;
       phys.envMapIntensity = 1.15;
       m.material = phys;
-      m.castShadow = m.receiveShadow = false;
+      m.castShadow = true;
+      m.receiveShadow = false;
       mats.push(phys);
     });
     prep?.(inner);
@@ -73,7 +74,10 @@ function useModel(url: string, fit: { h?: number; w?: number }, prep?: (root: TH
     root.scale.setScalar(base);
     root.updateMatrixWorld(true);
     const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 1e6);
-    mats.forEach((m) => (m.clippingPlanes = [plane]));
+    mats.forEach((m) => {
+      m.clippingPlanes = [plane];
+      m.clipShadows = true; // shadows follow the scan-line wipe
+    });
     return { root, mats, base, plane };
   }, [gltf, fit.h, fit.w, prep]);
 }
@@ -212,6 +216,23 @@ function Rig() {
     c.fillRect(0, 0, 512, 256);
     return new THREE.CanvasTexture(cv);
   }, []);
+  const poolTex = useMemo(() => {
+    const cv = document.createElement("canvas");
+    cv.width = 512;
+    cv.height = 256;
+    const c = cv.getContext("2d")!;
+    // Elliptical pool that reaches zero before every edge, so no seam shows.
+    c.setTransform(2, 0, 0, 1, 0, 0);
+    const g = c.createRadialGradient(128, 128, 0, 128, 128, 124);
+    g.addColorStop(0, "rgba(255,255,255,0.12)");
+    g.addColorStop(0.5, "rgba(255,255,255,0.045)");
+    g.addColorStop(1, "rgba(255,255,255,0)");
+    c.fillStyle = g;
+    c.fillRect(0, 0, 256, 256);
+    const t = new THREE.CanvasTexture(cv);
+    t.colorSpace = THREE.SRGBColorSpace;
+    return t;
+  }, []);
   const { camera, size } = useThree();
   const s = useRef({ v: 0, px: 0, py: 0 });
   const q = useMemo(() => new THREE.Quaternion(), []);
@@ -318,8 +339,18 @@ function Rig() {
           <meshBasicMaterial color="#ffd6da" transparent toneMapped={false} />
         </mesh>
       </group>
+      {/* Studio floor: a faint spotlight pool so the shadows have something to fall on. */}
+      <mesh position={[0, stageStore.mobile ? -0.955 : -1.455, 0]} rotation={[-Math.PI / 2, 0, 0]} renderOrder={-1}>
+        <planeGeometry args={[9, 5]} />
+        <meshBasicMaterial map={poolTex} transparent depthWrite={false} toneMapped={false} />
+      </mesh>
+      {/* Shadow catcher: invisible floor that only shows the cast shadows. */}
+      <mesh position={[0, stageStore.mobile ? -0.95 : -1.45, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
+        <planeGeometry args={[12, 8]} />
+        <shadowMaterial transparent opacity={0.55} />
+      </mesh>
       <mesh ref={floor} rotation={[-Math.PI / 2, 0, 0]}>
-        <planeGeometry args={[4.5, 3]} />
+        <planeGeometry args={[6, 3.6]} />
         <meshBasicMaterial map={floorTex} transparent depthWrite={false} />
       </mesh>
     </group>
@@ -343,6 +374,7 @@ export default function PanelScene() {
   return (
     <div style={{ position: "absolute", inset: 0 }}>
       <Canvas
+        shadows="soft"
         frameloop={active ? "always" : "never"}
         dpr={mobile ? [1, 1.5] : [1, 2]}
         camera={{ fov: 30, near: 0.1, far: 80, position: [0, 0.6, 9] }}
@@ -354,7 +386,22 @@ export default function PanelScene() {
         }}
       >
         <ambientLight intensity={0.15} />
-        <directionalLight position={[-4, 6, 5]} intensity={1.8} color="#fff4ea" />
+        <directionalLight
+          position={[-2.5, 7, 4]}
+          intensity={1.8}
+          color="#fff4ea"
+          castShadow
+          shadow-mapSize={[2048, 2048]}
+          shadow-bias={-0.0004}
+          shadow-normalBias={0.02}
+          shadow-radius={6}
+          shadow-camera-left={-4}
+          shadow-camera-right={4}
+          shadow-camera-top={4}
+          shadow-camera-bottom={-4}
+          shadow-camera-near={1}
+          shadow-camera-far={20}
+        />
         <directionalLight position={[6, 2, -4]} intensity={2.2} color="#a9c4ff" />
         <Suspense fallback={null}>
           <Environment files="/models/studio.hdr" environmentIntensity={0.9} />
