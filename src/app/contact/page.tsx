@@ -65,6 +65,23 @@ export default function ContactPage() {
                 </span>
               </li>
             </ul>
+            <div className="map">
+              <iframe
+                title={`Map: Deacam head office, ${addr}`}
+                src={`https://www.google.com/maps?q=${encodeURIComponent(addr)}&z=15&output=embed`}
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+                allowFullScreen
+              />
+              <a
+                className="map__open label"
+                href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(addr)}`}
+                target="_blank"
+                rel="noopener"
+              >
+                Open in Google Maps ↗
+              </a>
+            </div>
           </div>
           <div>
             <h2 className="h3" style={{ marginBottom: 32 }}>
