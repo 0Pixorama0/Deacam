@@ -5,6 +5,7 @@ import { useRef } from "react";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useGSAP } from "@gsap/react";
+import { reducedMotion } from "@/lib/motion";
 import { Img } from "../Img";
 import { Arrow, ArrowUpRight } from "../Icons";
 import { projects } from "@/content/site";
@@ -18,7 +19,8 @@ export function ProjectRail() {
   useGSAP(
     () => {
       const mm = gsap.matchMedia();
-      mm.add("(min-width: 861px) and (prefers-reduced-motion: no-preference)", () => {
+      mm.add("(min-width: 861px)", () => {
+        if (reducedMotion()) return;
         const track = root.current!.querySelector<HTMLElement>(".rail__track")!;
         const dist = () => track.scrollWidth - window.innerWidth;
         gsap.to(track, {

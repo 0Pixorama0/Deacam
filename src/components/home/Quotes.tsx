@@ -2,13 +2,14 @@
 
 import { useEffect, useState } from "react";
 import { testimonials } from "@/content/site";
+import { reducedMotion } from "@/lib/motion";
 
 export function Quotes() {
   const [on, setOn] = useState(0);
   const [paused, setPaused] = useState(false);
 
   useEffect(() => {
-    if (paused || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    if (paused || reducedMotion()) return;
     const t = window.setTimeout(() => setOn((o) => (o + 1) % testimonials.length), 8000);
     return () => window.clearTimeout(t);
   }, [on, paused]);

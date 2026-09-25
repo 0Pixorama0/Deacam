@@ -4,6 +4,7 @@ import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { stageStore, stageV } from "./store";
+import { reducedMotion } from "@/lib/motion";
 import { Btn } from "../Btn";
 import { Arrow } from "../Icons";
 import { divisions } from "@/content/site";
@@ -21,9 +22,8 @@ export function Stage() {
     const el = ref.current!;
     stageStore.el = el;
     const mq = window.matchMedia("(max-width: 960px)");
-    const rm = window.matchMedia("(prefers-reduced-motion: reduce)");
     stageStore.mobile = mq.matches;
-    stageStore.reduce = rm.matches;
+    stageStore.reduce = reducedMotion();
 
     // Defer WebGL until the browser is idle so the headline paints first.
     const idle = (window.requestIdleCallback ?? ((cb: () => void) => window.setTimeout(cb, 200))) as (cb: () => void) => number;

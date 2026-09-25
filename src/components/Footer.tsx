@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Logo } from "./Logo";
+import { MotionToggle } from "./MotionToggle";
 import { company, divisions } from "@/content/site";
 
 export function Footer() {
@@ -64,6 +65,7 @@ export function Footer() {
           <nav aria-label="Footer">
             <a href={company.staffLogin} target="_blank" rel="noopener">Staff login</a>
             <a href="#top">Back to top</a>
+            <MotionToggle />
           </nav>
         </div>
       </div>

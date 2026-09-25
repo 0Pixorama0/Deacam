@@ -6,6 +6,7 @@ import Lenis from "lenis";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { SplitText } from "gsap/SplitText";
+import { reducedMotion } from "@/lib/motion";
 
 gsap.registerPlugin(ScrollTrigger, SplitText);
 
@@ -29,8 +30,7 @@ export function Motion() {
 
   // Smooth scroll: created once for the life of the app.
   useEffect(() => {
-    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if (reduce) return;
+    if (reducedMotion()) return;
     const lenis = new Lenis({ lerp: 0.085, wheelMultiplier: 0.9, touchMultiplier: 1.4 });
     window.__lenis = lenis;
     lenis.on("scroll", ScrollTrigger.update);
@@ -48,7 +48,7 @@ export function Motion() {
   useEffect(() => {
     const root = document.documentElement;
     window.__motionReady = true;
-    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const reduce = reducedMotion();
     window.__lenis?.scrollTo(0, { immediate: true, force: true });
     if (reduce) {
       root.classList.remove("motion");

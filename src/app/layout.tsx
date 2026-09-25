@@ -67,7 +67,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <script
           dangerouslySetInnerHTML={{
             __html:
-              "(function(){try{if(!matchMedia('(prefers-reduced-motion: reduce)').matches){var d=document.documentElement;d.classList.add('motion');setTimeout(function(){if(!window.__motionReady)d.classList.remove('motion')},4000)}}catch(e){}})();",
+              "(function(){var d=document.documentElement;try{if(localStorage.getItem('deacam-motion')==='reduce'){d.dataset.motion='reduce';return}}catch(e){}d.classList.add('motion');setTimeout(function(){if(!window.__motionReady)d.classList.remove('motion')},4000)})();",
           }}
         />
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(orgLd) }} />
