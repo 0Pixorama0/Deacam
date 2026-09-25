@@ -7,7 +7,8 @@ import * as THREE from "three";
 import { clamp, smooth, stageStore, stageV } from "./store";
 import * as sign from "./signs";
 import { buildBreakerRows } from "./breakers";
-import { buildTechnician, pose } from "./technician";
+import { buildTechnician, pose, type Task } from "./technician";
+import { buildWorkGear, updateWorkGear } from "./workgear";
 
 /*
   Photoreal CC0 models (Poly Haven, compressed to GLB) carrying DEACAM
@@ -244,6 +245,7 @@ function Rig() {
     t.root.scale.setScalar(0.86);
     return t;
   }, []);
+  const gear = useMemo(() => buildWorkGear(), []);
   const walk = useRef({ x: -4.6, z: 0.9, yaw: Math.PI / 2, phase: 0, stride: 0, start: -1 });
   const { camera, size } = useThree();
   const s = useRef({ v: 0, px: 0, py: 0 });
@@ -384,17 +386,33 @@ function Rig() {
       const targetYaw = w.stride > 0.25 ? Math.atan2(dx, dz) : restYaw;
       w.yaw = damp(w.yaw, targetYaw, 7, dt);
       placeTech(tech.root, w.x, ay, w.z, w.yaw);
-      const reach = smooth(1.62, 1.82, v) * (1 - smooth(2.35, 2.55, v));
-      const look = smooth(2.6, 2.9, v) * (1 - smooth(3.35, 3.6, v));
-      pose(tech, {
-        phase: w.phase,
-        stride: w.stride,
-        reach,
-        look,
-        tablet: Math.max(0, 1 - w.stride * 1.4 - reach * 1.5 - look * 1.2),
-        breathe: time,
+      // Task at the current unit (time-looped while he stands there).
+      const station = p > 0 && p < 1 ? (p < 0.5 ? i : i + 1) : p >= 1 ? Math.min(4, i + 1) : i;
+      const opening = smooth(1.7, 1.85, v) * (1 - smooth(2.28, 2.4, v));
+      const tasks: Partial<Record<Task, number>> =
+        station === 0
+          ? { tablet: 1 }
+          : station === 1
+            ? { pull: 1 }
+            : station === 2
+              ? { reach: opening, probe: smooth(2.28, 2.4, v) }
+              : station === 3
+                ? { signal: 1 }
+                : { gauge: 1 };
+      pose(tech, { phase: w.phase, stride: w.stride, tasks, time });
+      const still = 1 - w.stride;
+      const eff: Partial<Record<Task, number>> = {};
+      for (const k in tasks) eff[k as Task] = (tasks[k as Task] ?? 0) * still;
+      updateWorkGear(gear, tech, eff, {
+        kioskEntry: new THREE.Vector3(-0.42, ay + 0.3, 0.42),
+        hoist: new THREE.Vector3(0.05, ay + 1.6 + 1.05, 0.15),
+        coolerPort: new THREE.Vector3(-0.62, ay + 1.38, 0.42),
+        floorY: ay,
+        techPos: new THREE.Vector3(w.x, ay, w.z),
+        techYaw: w.yaw,
       });
     }
+    setVisible(gear.group, !mobile);
 
     const fl = floor.current!;
     fl.position.set(0, ay + 0.002, 0);
@@ -409,6 +427,7 @@ function Rig() {
       <primitive object={crane.root} />
       <primitive object={cooler.root} />
       <primitive object={tech.root} />
+      <primitive object={gear.group} />
       <group ref={scan} visible={false}>
         <mesh rotation={[-Math.PI / 2, 0, 0]}>
           <planeGeometry args={[5.2, 2.6]} />
