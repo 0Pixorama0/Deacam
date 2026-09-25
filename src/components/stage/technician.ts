@@ -1,9 +1,9 @@
 import * as THREE from "three";
 
 /*
-  An original DEACAM technician in a friendly animated-film style (big face,
-  round glasses, overalls with orange braces), built from primitives: no
-  licence, tiny download.
+  An original DEACAM technician in a friendly animated-film style (yellow hard
+  hat, blue polo, orange hi-vis vest, jeans and tool pouches), built from
+  primitives: no licence, tiny download.
 
   Rig (all joints are groups):
     root → hips → thighL/R → shinL/R → boot
@@ -42,30 +42,30 @@ export function buildTechnician(): Technician {
     new THREE.MeshPhysicalMaterial({ color, roughness: rough, metalness: metal, ...extra });
   // Friendly animated-film palette: soft, slightly glossy "clay" surfaces.
   const M = {
-    shirt: phys("#86aed3", 0.62, 0, { sheen: 0.5, sheenColor: new THREE.Color("#cfe2f3") }),
-    shirtDark: phys("#6f97bd", 0.65),
-    denim: phys("#3b4453", 0.7, 0, { sheen: 0.35, sheenColor: new THREE.Color("#6a7688") }),
-    denimDark: phys("#2c333f", 0.75),
-    strap: phys("#e38a2c", 0.5, 0, { clearcoat: 0.2 }),
-    belt: phys("#e07a24", 0.45, 0, { clearcoat: 0.3 }),
-    buckle: phys("#e3b341", 0.25, 0.85),
-    pouch: phys("#b8621f", 0.55),
-    boot: phys("#7a4a2a", 0.45, 0, { clearcoat: 0.4, clearcoatRoughness: 0.35 }),
-    soleTrim: phys("#e0a13a", 0.5),
-    sole: phys("#23201d", 0.85),
-    skin: phys("#f0b58e", 0.5, 0, { sheen: 0.4, sheenColor: new THREE.Color("#ffd3b8"), clearcoat: 0.15 }),
-    cheek: phys("#e89a7d", 0.55),
-    hair: phys("#3d4350", 0.7),
-    brow: phys("#3a3f4b", 0.7),
+    polo: phys("#3f6ea6", 0.62, 0, { sheen: 0.5, sheenColor: new THREE.Color("#8fb3de") }),
+    poloDark: phys("#335d8f", 0.65),
+    vest: phys("#f26a1b", 0.55, 0, { sheen: 0.4, sheenColor: new THREE.Color("#ffb27a") }),
+    band: phys("#e6f02a", 0.35, 0, { clearcoat: 0.4, emissive: new THREE.Color("#3a3c00") }),
+    trim: phys("#8a4a1c", 0.6),
+    jeans: phys("#4b77ad", 0.72, 0, { sheen: 0.35, sheenColor: new THREE.Color("#9cbde6") }),
+    jeansLight: phys("#5f8bc0", 0.7),
+    belt: phys("#5a3219", 0.5, 0, { clearcoat: 0.3 }),
+    buckle: phys("#c9a24a", 0.3, 0.8),
+    pouch: phys("#ef6e1c", 0.55),
+    toolY: phys("#e8b21e", 0.45),
+    toolG: phys("#8e959d", 0.3, 0.8),
+    boot: phys("#8a4b26", 0.42, 0, { clearcoat: 0.45, clearcoatRoughness: 0.35 }),
+    sole: phys("#4a2a16", 0.8),
+    skin: phys("#eeb08a", 0.5, 0, { sheen: 0.4, sheenColor: new THREE.Color("#ffd0b0"), clearcoat: 0.12 }),
+    cheek: phys("#e8977a", 0.55),
+    hair: phys("#1d1f24", 0.55, 0, { sheen: 0.4, sheenColor: new THREE.Color("#4a5060") }),
+    brow: phys("#1d1f24", 0.6),
     white: phys("#ffffff", 0.25, 0, { clearcoat: 0.6 }),
-    iris: phys("#8a6a1f", 0.3, 0, { clearcoat: 1 }),
+    iris: phys("#6b3a1c", 0.3, 0, { clearcoat: 1 }),
     pupil: phys("#111111", 0.2, 0, { clearcoat: 1 }),
-    mouth: phys("#5a2320", 0.6),
-    frame: phys("#4a4f57", 0.35, 0.6),
-    lens: new THREE.MeshPhysicalMaterial({ color: "#ffffff", roughness: 0.02, transmission: 0.9, thickness: 0.01, transparent: true, opacity: 0.18 }),
-    hat: phys("#f2a531", 0.35, 0, { clearcoat: 0.8, clearcoatRoughness: 0.25 }),
-    hatDark: phys("#d98b22", 0.4, 0, { clearcoat: 0.6 }),
-    glove: phys("#6b5646", 0.7, 0, { sheen: 0.3 }),
+    lip: phys("#b8614f", 0.55),
+    hat: phys("#f7b516", 0.32, 0, { clearcoat: 0.9, clearcoatRoughness: 0.2 }),
+    hatDark: phys("#e39c0c", 0.38, 0, { clearcoat: 0.6 }),
     red: phys("#bf1e2e", 0.45),
     black: phys("#121416", 0.5),
     metal: phys("#b9bec4", 0.25, 0.9),
@@ -100,41 +100,47 @@ export function buildTechnician(): Technician {
     g.translate(0, 0, -d / 2);
     return g;
   };
+  // Lathe shell open at the front (phi 0 = +z), used for the vest and its bands.
+  const GAP = 0.34;
+  const shell = (pts: [number, number][], m: THREE.Material, zs = 0.76) =>
+    mesh(new THREE.LatheGeometry(pts.map(([r, y]) => new THREE.Vector2(r, y)), 40, GAP, Math.PI * 2 - GAP * 2).scale(1.05, 1, zs), m);
 
   const root = new THREE.Group();
   const hips = new THREE.Group();
   hips.position.y = HIP_Y;
   root.add(hips);
 
-  // ── Pelvis, belt, pouches ──
-  hips.add(mesh(new THREE.SphereGeometry(0.3, 28, 18).scale(1.08, 0.62, 0.8), M.denim, 0, 0.02, 0));
-  hips.add(mesh(new THREE.CylinderGeometry(0.325, 0.31, 0.09, 36).scale(1.06, 1, 0.8), M.belt, 0, 0.15, 0));
-  hips.add(mesh(rbox(0.13, 0.1, 0.03, 0.015), M.buckle, 0, 0.15, 0.255));
-  hips.add(mesh(rbox(0.07, 0.045, 0.035, 0.01), M.belt, 0, 0.15, 0.262));
+  // ── Jeans seat, brown belt, orange tool pouches ──
+  hips.add(mesh(new THREE.SphereGeometry(0.3, 28, 18).scale(1.08, 0.62, 0.8), M.jeans, 0, 0.02, 0));
+  hips.add(mesh(new THREE.CylinderGeometry(0.318, 0.31, 0.065, 36).scale(1.06, 1, 0.8), M.belt, 0, 0.15, 0));
+  hips.add(mesh(rbox(0.09, 0.07, 0.025, 0.012), M.buckle, 0, 0.15, 0.25));
   for (const s of [-1, 1]) {
     const pouch = new THREE.Group();
-    pouch.position.set(s * 0.29, 0.05, 0.12);
-    pouch.rotation.y = s * 0.55;
-    pouch.add(mesh(rbox(0.13, 0.18, 0.08, 0.02), M.pouch));
-    pouch.add(mesh(rbox(0.14, 0.05, 0.09, 0.015), M.pouch, 0, 0.08, 0.005));
+    pouch.position.set(s * 0.33, -0.06, 0.06);
+    pouch.rotation.y = s * 0.7;
+    pouch.add(mesh(rbox(0.16, 0.28, 0.1, 0.025), M.pouch));
+    pouch.add(mesh(rbox(0.17, 0.05, 0.11, 0.015), M.pouch, 0, 0.13, 0));
+    // tools poking out
+    pouch.add(mesh(rbox(0.035, 0.16, 0.025, 0.01), M.toolY, -0.04, 0.2, 0));
+    pouch.add(mesh(new THREE.CylinderGeometry(0.014, 0.014, 0.18, 10), M.toolG, 0.02, 0.21, 0.01));
+    pouch.add(mesh(rbox(0.03, 0.12, 0.02, 0.008), M.toolG, 0.05, 0.18, -0.02));
     hips.add(pouch);
   }
 
-  // ── Legs: straight overall trousers, big cuffs, chunky boots ──
+  // ── Legs: blue jeans with rolled cuffs, brown work boots ──
   const leg = (side: number) => {
     const thigh = new THREE.Group();
     thigh.position.set(side * 0.155, 0, 0);
-    thigh.add(mesh(cap(0.14, 0.36), M.denim, 0, -0.27, 0));
+    thigh.add(mesh(cap(0.145, 0.36), M.jeans, 0, -0.27, 0));
     const shin = new THREE.Group();
     shin.position.y = -0.55;
-    shin.add(mesh(cap(0.13, 0.3), M.denim, 0, -0.22, 0));
-    shin.add(mesh(new THREE.CylinderGeometry(0.155, 0.15, 0.12, 28), M.denimDark, 0, -0.43, 0)); // cuff
+    shin.add(mesh(cap(0.138, 0.3), M.jeans, 0, -0.22, 0));
+    shin.add(mesh(new THREE.TorusGeometry(0.14, 0.035, 12, 28).rotateX(Math.PI / 2), M.jeansLight, 0, -0.43, 0)); // rolled cuff
     const b = new THREE.Group();
     b.position.y = -0.56;
-    b.add(mesh(new THREE.SphereGeometry(0.15, 24, 16).scale(1, 0.72, 1.55), M.boot, 0, 0.02, 0.07));
-    b.add(mesh(new THREE.CylinderGeometry(0.13, 0.14, 0.12, 24), M.boot, 0, 0.07, -0.01));
-    b.add(mesh(rbox(0.28, 0.035, 0.46, 0.015), M.soleTrim, 0, -0.06, 0.07));
-    b.add(mesh(rbox(0.27, 0.05, 0.45, 0.02), M.sole, 0, -0.095, 0.07));
+    b.add(mesh(new THREE.SphereGeometry(0.155, 24, 16).scale(1, 0.72, 1.55), M.boot, 0, 0.02, 0.07));
+    b.add(mesh(new THREE.CylinderGeometry(0.135, 0.145, 0.13, 24), M.boot, 0, 0.07, -0.01));
+    b.add(mesh(rbox(0.29, 0.06, 0.47, 0.02), M.sole, 0, -0.09, 0.07));
     shin.add(b);
     thigh.add(shin);
     hips.add(thigh);
@@ -143,11 +149,11 @@ export function buildTechnician(): Technician {
   const L = leg(-1);
   const R = leg(1);
 
-  // ── Torso: blue shirt, overall bib with orange braces ──
+  // ── Torso: blue polo, open hi-vis vest ──
   const torso = new THREE.Group();
   torso.position.y = 0.16;
   hips.add(torso);
-  const prof = [
+  const prof: [number, number][] = [
     [0.0, 0.0],
     [0.29, 0.0],
     [0.31, 0.12],
@@ -157,47 +163,60 @@ export function buildTechnician(): Technician {
     [0.31, 0.8],
     [0.15, 0.86],
     [0.0, 0.87],
-  ].map(([r, y]) => new THREE.Vector2(r, y));
-  torso.add(mesh(new THREE.LatheGeometry(prof, 40).scale(1.05, 1, 0.74), M.shirt));
-  // lower overall wrap
-  torso.add(mesh(new THREE.CylinderGeometry(0.335, 0.31, 0.24, 40).scale(1.05, 1, 0.76), M.denim, 0, 0.1, 0));
-  // bib
-  const bib = mesh(rbox(0.42, 0.34, 0.05, 0.03), M.denim, 0, 0.36, 0.245);
-  bib.rotation.x = -0.06;
-  torso.add(bib);
-  torso.add(mesh(rbox(0.16, 0.1, 0.02, 0.015), M.denimDark, 0, 0.4, 0.278)); // bib pocket
-  torso.add(mesh(rbox(0.1, 0.035, 0.012, 0.006), M.red, 0, 0.42, 0.29)); // DEACAM patch
+  ];
+  torso.add(mesh(new THREE.LatheGeometry(prof.map(([r, y]) => new THREE.Vector2(r, y)), 40).scale(1.05, 1, 0.74), M.polo));
+  // polo placket, buttons, collar
+  torso.add(mesh(rbox(0.06, 0.26, 0.015, 0.01), M.poloDark, 0, 0.66, 0.262));
+  for (const y of [0.72, 0.62]) torso.add(mesh(new THREE.CylinderGeometry(0.012, 0.012, 0.01, 12).rotateX(Math.PI / 2), M.white, 0, y, 0.272));
   for (const s of [-1, 1]) {
-    // braces run up the chest and over the shoulders
-    const strap = mesh(rbox(0.075, 0.42, 0.03, 0.012), M.strap, s * 0.15, 0.66, 0.2);
-    strap.rotation.set(-0.45, 0, s * -0.12);
-    torso.add(strap);
-    const back = mesh(rbox(0.075, 0.5, 0.03, 0.012), M.strap, s * 0.13, 0.55, -0.24);
-    back.rotation.set(0.1, 0, s * 0.18);
-    torso.add(back);
-    torso.add(mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.015, 16).rotateX(Math.PI / 2), M.buckle, s * 0.15, 0.51, 0.28)); // button
-    // collar points
-    const c = mesh(rbox(0.12, 0.06, 0.02, 0.01), M.shirtDark, s * 0.07, 0.83, 0.12);
-    c.rotation.set(0.6, s * 0.4, s * 0.45);
+    const c = mesh(rbox(0.15, 0.07, 0.02, 0.012), M.polo, s * 0.08, 0.83, 0.12);
+    c.rotation.set(0.7, s * 0.45, s * 0.5);
     torso.add(c);
   }
+  // vest body (orange), yellow bands, brown piping at the opening
+  const vp: [number, number][] = [
+    [0.305, 0.05],
+    [0.325, 0.14],
+    [0.355, 0.34],
+    [0.375, 0.56],
+    [0.37, 0.7],
+    [0.32, 0.78],
+  ];
+  torso.add(shell(vp, M.vest));
+  torso.add(shell([[0.332, 0.14], [0.345, 0.25]], M.band, 0.78));
+  torso.add(shell([[0.36, 0.34], [0.37, 0.45]], M.band, 0.78));
+  for (const s of [-1, 1]) {
+    const ang = s * (GAP + 0.08);
+    // vertical yellow stripe up the front beside the opening
+    const st = mesh(rbox(0.06, 0.42, 0.012, 0.008), M.band, Math.sin(ang) * 0.385, 0.6, Math.cos(ang) * 0.29);
+    st.rotation.set(-0.08, ang, 0);
+    torso.add(st);
+    // brown piping along the opening
+    const pp = mesh(cap(0.008, 0.66), M.trim, Math.sin(s * GAP) * 0.36 * 1.05, 0.42, Math.cos(s * GAP) * 0.36 * 0.76);
+    torso.add(pp);
+    // vest shoulder straps
+    const sh = mesh(rbox(0.13, 0.05, 0.3, 0.02), M.vest, s * 0.27, 0.79, 0);
+    sh.rotation.z = s * -0.35;
+    torso.add(sh);
+  }
+  torso.add(mesh(rbox(0.1, 0.035, 0.012, 0.006), M.red, -0.2, 0.58, 0.26)); // DEACAM patch
 
-  // ── Arms: rolled sleeves, bare forearms, work gloves ──
+  // ── Arms: short polo sleeves, bare arms and hands ──
   const arm = (side: number) => {
     const upper = new THREE.Group();
     upper.position.set(side * 0.42, 0.74, 0);
-    upper.add(mesh(new THREE.SphereGeometry(0.14, 20, 14), M.shirt));
-    upper.add(mesh(cap(0.11, 0.28), M.shirt, 0, -0.22, 0));
-    upper.add(mesh(new THREE.TorusGeometry(0.105, 0.035, 12, 24).rotateX(Math.PI / 2), M.shirtDark, 0, -0.42, 0)); // rolled cuff
+    upper.add(mesh(new THREE.SphereGeometry(0.145, 20, 14), M.polo));
+    upper.add(mesh(new THREE.CylinderGeometry(0.135, 0.125, 0.2, 20), M.polo, 0, -0.1, 0)); // short sleeve
+    upper.add(mesh(new THREE.TorusGeometry(0.125, 0.018, 10, 24).rotateX(Math.PI / 2), M.poloDark, 0, -0.2, 0));
+    upper.add(mesh(cap(0.105, 0.26), M.skin, 0, -0.26, 0));
     const fore = new THREE.Group();
     fore.position.y = -0.46;
-    fore.add(mesh(cap(0.085, 0.24), M.skin, 0, -0.15, 0));
+    fore.add(mesh(cap(0.09, 0.24), M.skin, 0, -0.15, 0));
     const hand = new THREE.Group();
     hand.position.y = -0.36;
-    hand.add(mesh(new THREE.CylinderGeometry(0.1, 0.09, 0.07, 20), M.glove, 0, 0.05, 0)); // glove cuff
-    hand.add(mesh(new THREE.SphereGeometry(0.1, 20, 14).scale(1, 1.1, 0.75), M.glove, 0, -0.05, 0));
-    for (let f = 0; f < 3; f++) hand.add(mesh(cap(0.028, 0.06), M.glove, -0.045 + f * 0.045, -0.15, 0.02));
-    const thumb = mesh(cap(0.03, 0.06), M.glove, side * -0.08, -0.03, 0.04);
+    hand.add(mesh(new THREE.SphereGeometry(0.095, 20, 14).scale(1, 1.1, 0.75), M.skin, 0, -0.04, 0));
+    for (let f = 0; f < 4; f++) hand.add(mesh(cap(0.022, 0.05), M.skin, -0.05 + f * 0.034, -0.13, 0.02));
+    const thumb = mesh(cap(0.026, 0.05), M.skin, side * -0.075, -0.03, 0.04);
     thumb.rotation.set(0.5, 0, side * 0.7);
     hand.add(thumb);
     const tip = new THREE.Object3D();
@@ -211,66 +230,55 @@ export function buildTechnician(): Technician {
   const AL = arm(-1);
   const AR = arm(1);
 
-  // ── Head: big friendly face, round glasses, hard hat ──
+  // ── Head: friendly face, black hair, yellow hard hat ──
   const head = new THREE.Group();
   head.position.y = 0.86;
   torso.add(head);
   head.add(mesh(cap(0.1, 0.05), M.skin, 0, 0.03, 0)); // neck
-  const HY = 0.34; // head centre
-  head.add(mesh(new THREE.SphereGeometry(0.32, 40, 30).scale(0.98, 1.02, 0.94), M.skin, 0, HY, 0));
-  head.add(mesh(new THREE.SphereGeometry(0.2, 28, 18).scale(1.2, 0.8, 0.9), M.skin, 0, HY - 0.14, 0.08)); // cheeks/jaw
-  // hair at the sides under the hat
-  for (const s of [-1, 1]) head.add(mesh(new THREE.SphereGeometry(0.14, 16, 12).scale(0.55, 1, 1), M.hair, s * 0.285, HY + 0.08, -0.04));
-  // ears
-  for (const s of [-1, 1]) head.add(mesh(new THREE.SphereGeometry(0.07, 16, 12).scale(0.5, 1, 0.8), M.skin, s * 0.315, HY - 0.02, 0));
-  // eyes: white, iris, pupil, highlight
+  const HY = 0.34;
+  head.add(mesh(new THREE.SphereGeometry(0.31, 40, 30).scale(0.96, 1.06, 0.94), M.skin, 0, HY, 0));
+  head.add(mesh(new THREE.SphereGeometry(0.2, 28, 18).scale(1.15, 0.85, 0.9), M.skin, 0, HY - 0.13, 0.07)); // jaw
+  // hair: sides/back and a fringe peeking under the brim
+  // hair covers the back and sides only (front of the face stays open)
+  head.add(mesh(new THREE.SphereGeometry(0.318, 36, 24, Math.PI / 2 + 0.95, Math.PI * 2 - 1.9, 0, Math.PI * 0.56).scale(0.97, 1.02, 0.95), M.hair, 0, HY + 0.01, -0.01));
+  for (const s of [-1, 1]) head.add(mesh(new THREE.SphereGeometry(0.1, 14, 10).scale(0.45, 1.1, 0.8), M.hair, s * 0.285, HY + 0.06, -0.02));
+  for (let k = -2; k <= 2; k++) {
+    const f = mesh(new THREE.ConeGeometry(0.04, 0.08, 8), M.hair, k * 0.06, HY + 0.215, 0.255);
+    f.rotation.set(-2.6, 0, k * 0.2);
+    head.add(f);
+  }
+  for (const s of [-1, 1]) head.add(mesh(new THREE.SphereGeometry(0.075, 16, 12).scale(0.5, 1, 0.8), M.skin, s * 0.305, HY - 0.02, 0)); // ears
   for (const s of [-1, 1]) {
     const e = new THREE.Group();
-    e.position.set(s * 0.115, HY + 0.05, 0.255);
-    e.add(mesh(new THREE.SphereGeometry(0.075, 24, 18).scale(1, 1.1, 0.6), M.white));
-    e.add(mesh(new THREE.CircleGeometry(0.045, 24), M.iris, 0, -0.005, 0.047));
-    e.add(mesh(new THREE.CircleGeometry(0.024, 20), M.pupil, 0, -0.005, 0.048));
-    e.add(mesh(new THREE.CircleGeometry(0.01, 12), M.white, 0.014, 0.01, 0.049));
+    e.position.set(s * 0.11, HY + 0.04, 0.25);
+    e.add(mesh(new THREE.SphereGeometry(0.066, 24, 18).scale(1, 1.12, 0.6), M.white));
+    e.add(mesh(new THREE.CircleGeometry(0.042, 24), M.iris, 0, -0.004, 0.041));
+    e.add(mesh(new THREE.CircleGeometry(0.022, 20), M.pupil, 0, -0.004, 0.042));
+    e.add(mesh(new THREE.CircleGeometry(0.009, 12), M.white, 0.013, 0.01, 0.043));
     e.rotation.y = s * 0.18;
     head.add(e);
-    // thick brows
-    const b = mesh(cap(0.022, 0.09).rotateZ(Math.PI / 2), M.brow, s * 0.115, HY + 0.155, 0.27);
-    b.rotation.z = s * -0.12;
+    const b = mesh(cap(0.026, 0.1).rotateZ(Math.PI / 2), M.brow, s * 0.11, HY + 0.145, 0.27);
+    b.rotation.z = s * -0.18;
     head.add(b);
-    // cheek blush
-    head.add(mesh(new THREE.CircleGeometry(0.045, 16), M.cheek, s * 0.18, HY - 0.08, 0.272).rotateY(s * 0.4));
+    head.add(mesh(new THREE.CircleGeometry(0.045, 16), M.cheek, s * 0.17, HY - 0.07, 0.265).rotateY(s * 0.4));
   }
-  // nose
-  head.add(mesh(new THREE.SphereGeometry(0.06, 20, 16).scale(0.9, 0.85, 1.1), M.skin, 0, HY - 0.03, 0.315));
-  // smile: dark mouth with a row of teeth
-  const mouth = new THREE.Group();
-  mouth.position.set(0, HY - 0.14, 0.285);
-  mouth.rotation.x = -0.25;
-  mouth.add(mesh(new THREE.CircleGeometry(0.09, 28, Math.PI, Math.PI).scale(1, 0.55, 1), M.mouth));
-  mouth.add(mesh(new THREE.PlaneGeometry(0.16, 0.025), M.white, 0, -0.012, 0.002));
-  head.add(mouth);
-  // round glasses
-  for (const s of [-1, 1]) {
-    head.add(mesh(new THREE.TorusGeometry(0.085, 0.011, 10, 32), M.frame, s * 0.115, HY + 0.05, 0.31));
-    head.add(mesh(new THREE.CircleGeometry(0.083, 28), M.lens, s * 0.115, HY + 0.05, 0.308));
-    const arm2 = mesh(cap(0.008, 0.22).rotateX(Math.PI / 2), M.frame, s * 0.2, HY + 0.06, 0.2);
-    arm2.rotation.y = s * 0.15;
-    head.add(arm2);
-  }
-  head.add(mesh(new THREE.TorusGeometry(0.03, 0.009, 8, 16, Math.PI), M.frame, 0, HY + 0.06, 0.315));
-  // hard hat
+  head.add(mesh(new THREE.SphereGeometry(0.052, 20, 16).scale(0.9, 0.85, 1.1), M.skin, 0, HY - 0.03, 0.3)); // nose
+  // closed, warm smile
+  const smile = mesh(new THREE.TorusGeometry(0.07, 0.011, 8, 24, Math.PI * 0.8), M.lip, 0, HY - 0.09, 0.285);
+  smile.rotation.z = Math.PI + Math.PI * 0.1;
+  head.add(smile);
+  // yellow hard hat with front peak and side slots
   const helmet = new THREE.Group();
-  helmet.position.y = HY + 0.17;
-  helmet.add(mesh(new THREE.SphereGeometry(0.34, 40, 20, 0, Math.PI * 2, 0, Math.PI / 2).scale(1, 0.9, 1.08), M.hat));
-  helmet.add(mesh(new THREE.CylinderGeometry(0.37, 0.38, 0.035, 48).scale(1, 1, 1.12), M.hatDark, 0, 0.0, 0.02));
-  const peak = mesh(new THREE.CylinderGeometry(0.22, 0.24, 0.03, 32, 1, false, -Math.PI / 2, Math.PI).scale(1, 1, 0.7), M.hat, 0, 0.005, 0.26);
-  helmet.add(peak);
-  const ridge = mesh( // centre ridge
-    new THREE.TorusGeometry(0.33, 0.028, 10, 32, Math.PI), M.hatDark, 0, 0, 0);
+  helmet.position.y = HY + 0.15;
+  helmet.add(mesh(new THREE.SphereGeometry(0.34, 40, 20, 0, Math.PI * 2, 0, Math.PI / 2).scale(1, 0.95, 1.08), M.hat));
+  helmet.add(mesh(new THREE.CylinderGeometry(0.37, 0.385, 0.035, 48).scale(1, 1, 1.12), M.hatDark, 0, 0, 0.02));
+  helmet.add(mesh(new THREE.CylinderGeometry(0.22, 0.25, 0.03, 32, 1, false, -Math.PI / 2, Math.PI).scale(1, 1, 0.75), M.hat, 0, 0.005, 0.27));
+  const ridge = mesh(new THREE.TorusGeometry(0.33, 0.03, 10, 32, Math.PI), M.hatDark, 0, 0, 0); // centre ridge
   ridge.rotation.y = Math.PI / 2;
-  ridge.scale.set(1, 0.9, 1.08);
+  ridge.scale.set(1, 0.95, 1.08);
   helmet.add(ridge);
-  helmet.add(mesh(rbox(0.1, 0.03, 0.005, 0.008), M.red, 0, 0.2, 0.33)); // DEACAM mark on the front
+  for (const s of [-1, 1]) helmet.add(mesh(rbox(0.05, 0.06, 0.1, 0.012), M.hatDark, s * 0.36, 0.03, 0)); // accessory slots
+  helmet.add(mesh(rbox(0.1, 0.03, 0.005, 0.008), M.red, 0, 0.19, 0.335)); // DEACAM mark
   head.add(helmet);
 
   // ── Props (same anchors the scene uses) ──
