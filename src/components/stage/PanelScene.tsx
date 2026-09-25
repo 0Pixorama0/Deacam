@@ -6,6 +6,7 @@ import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import { clamp, smooth, stageStore, stageV } from "./store";
 import * as sign from "./signs";
+import { buildBreakerRows } from "./breakers";
 
 /*
   Photoreal CC0 models (Poly Haven, compressed to GLB) carrying DEACAM
@@ -78,13 +79,13 @@ function useModel(url: string, fit: { h?: number; w?: number }, prep?: (root: TH
 }
 
 /** Stick a badge onto the model surface found by casting a ray at it from the front. */
-function addBadge(model: Model, tex: THREE.Texture, fx: number, fy: number, w: number) {
+function addBadge(model: Model, tex: THREE.Texture, fx: number, fy: number, w: number, onto?: THREE.Object3D | null) {
   model.root.updateMatrixWorld(true);
   const box = new THREE.Box3().setFromObject(model.root);
   const x = box.min.x + (box.max.x - box.min.x) * fx;
   const y = box.min.y + (box.max.y - box.min.y) * fy;
   const ray = new THREE.Raycaster(new THREE.Vector3(x, y, box.max.z + 1), new THREE.Vector3(0, 0, -1));
-  const hit = ray.intersectObject(model.root, true).find((h) => h.object.visible && !h.object.userData.badge);
+  const hit = ray.intersectObject(onto ?? model.root, true).find((h) => h.object.visible && !h.object.userData.badge);
   if (!hit || !hit.face) return;
   const img = tex.image as HTMLImageElement;
   const mat = new THREE.MeshStandardMaterial({
@@ -103,6 +104,39 @@ function addBadge(model: Model, tex: THREE.Texture, fx: number, fy: number, w: n
   hit.object.attach(badge); // moves with doors
   mat.clippingPlanes = [model.plane];
   model.mats.push(mat);
+}
+
+
+/** Replace the board's painted breakers with modelled DIN-rail devices. */
+function mountBreakers(model: Model, door: THREE.Object3D | null) {
+  const box = model.root.getObjectByName("power_box_01_box");
+  if (!box) return;
+  model.root.updateMatrixWorld(true);
+  const bb = new THREE.Box3().setFromObject(box);
+  const w = bb.max.x - bb.min.x;
+  const h = bb.max.y - bb.min.y;
+  const cx = bb.min.x + w * 0.515;
+  // find the back plate by casting at the panel centre, ignoring the door
+  const ray = new THREE.Raycaster(new THREE.Vector3(cx, bb.min.y + h * 0.5, bb.max.z + 1), new THREE.Vector3(0, 0, -1));
+  const hit = ray
+    .intersectObject(box, true)
+    .find((x) => !x.object.userData.badge && (!door || !door.getObjectById(x.object.id)));
+  const plateZ = hit ? hit.point.z : bb.min.z + (bb.max.z - bb.min.z) * 0.3;
+  const extra: THREE.Material[] = [];
+  const rows = buildBreakerRows(w * 0.55, [bb.min.y + h * 0.752, bb.min.y + h * 0.54, bb.min.y + h * 0.31], extra);
+  // Built in world units, then re-parented so it follows the board's transforms.
+  rows.position.set(cx, 0, plateZ + 0.004);
+  rows.updateMatrixWorld(true);
+  box.attach(rows);
+  rows.visible = false;
+  model.root.userData.breakers = rows;
+  extra.forEach((m) => (m.clippingPlanes = [model.plane]));
+  model.mats.push(...extra);
+}
+
+/** Scene-graph mutation kept outside the component body (React compiler rule). */
+function setVisible(o: THREE.Object3D | undefined, on: boolean) {
+  if (o) o.visible = on;
 }
 
 // Clipping: keep everything, keep above a height, or keep below it (world space).
@@ -128,11 +162,12 @@ function Rig() {
   const ready = useMemo(() => {
     door?.quaternion.identity();
     // Board (door): brand, ID plate, arc-flash warning, isolation notice, service sticker.
-    addBadge(board, badge, 0.5, 0.86, 0.95);
-    addBadge(board, sign.idPlate("DB-01", "415 V · 3 PHASE · 50 Hz"), 0.5, 0.75, 0.62);
-    addBadge(board, sign.warning("ARC FLASH AND", "SHOCK HAZARD"), 0.3, 0.43, 0.5);
-    addBadge(board, sign.mandatory("ISOLATE BEFORE", "OPENING"), 0.3, 0.24, 0.55);
-    addBadge(board, sign.service(), 0.73, 0.2, 0.42);
+    addBadge(board, badge, 0.5, 0.86, 0.95, door);
+    addBadge(board, sign.idPlate("DB-01", "415 V · 3 PHASE · 50 Hz"), 0.5, 0.75, 0.62, door);
+    addBadge(board, sign.warning("ARC FLASH AND", "SHOCK HAZARD"), 0.3, 0.43, 0.5, door);
+    addBadge(board, sign.mandatory("ISOLATE BEFORE", "OPENING"), 0.3, 0.24, 0.55, door);
+    addBadge(board, sign.service(), 0.73, 0.2, 0.42, door);
+    mountBreakers(board, door); // after the door labels, so their rays hit the closed door
     // Kiosk: brand, DANGER sign, ID plate, service sticker.
     addBadge(kiosk, badge, 0.3, 0.86, 0.8);
     addBadge(kiosk, sign.idPlate("LV KIOSK K-2754", "DEACAM · SITE RETICULATION"), 0.5, 0.76, 0.62);
@@ -258,6 +293,7 @@ function Rig() {
     if (door) {
       q.identity().slerp(doorOpenQ, smooth(1.8, 2.25, v));
       door.quaternion.copy(q);
+      setVisible(board.root.userData.breakers as THREE.Object3D | undefined, smooth(1.8, 2.25, v) > 0.08);
     }
 
     const fl = floor.current!;
