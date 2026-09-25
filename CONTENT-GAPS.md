@@ -24,7 +24,7 @@ Everything on the site comes from deacam.com.au (read September 2026) or the cli
   strip, including Siemens, Eaton and Dräger, which may be partners or suppliers rather than clients. Confirm the
   list and permission to show each logo. Originals are small (500x300 JPG); vector logos would be sharper.
 - **Testimonials** are verbatim excerpts from the current site (Yarra Trams, Siemens, Oakridge Wines).
-- **Staff login** keeps the current MAAPS link (deacam.maaps.com.au) in the footer.
+- **Staff login** keeps the current MAAPS link (deacam.maaps.com.au) as the grey Login button in the header.
 - **Privacy and Terms pages** do not exist yet, so they are not linked.
 
 ## Before launch

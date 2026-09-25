@@ -64,7 +64,6 @@ export function Footer() {
         <div className="footer__bottom">
           <span>© {year} {company.legalName}</span>
           <nav aria-label="Footer">
-            <a href={company.staffLogin} target="_blank" rel="noopener">Staff login</a>
             <a href="#top">Back to top</a>
             <MotionToggle />
           </nav>
