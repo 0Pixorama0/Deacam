@@ -88,7 +88,7 @@ export function Stage() {
             <Btn href="/contact" variant="red" magnetic>
               Talk to an engineer
             </Btn>
-            <Btn href="/projects" variant="ghost">
+            <Btn href="/projects" variant="red">
               See the work
             </Btn>
           </div>

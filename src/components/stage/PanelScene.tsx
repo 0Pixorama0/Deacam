@@ -5,6 +5,7 @@ import { Environment, useGLTF, useTexture } from "@react-three/drei";
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import { clamp, smooth, stageStore, stageV } from "./store";
+import * as sign from "./signs";
 
 /*
   Photoreal CC0 models (Poly Haven, compressed to GLB) carrying DEACAM
@@ -47,8 +48,16 @@ function useModel(url: string, fit: { h?: number; w?: number }, prep?: (root: TH
     inner.traverse((o) => {
       const m = o as THREE.Mesh;
       if (!m.isMesh) return;
-      m.material = (m.material as THREE.Material).clone();
-      mats.push(m.material as THREE.Material);
+      // Powder-coat look: physical material with a soft clearcoat over the scan textures.
+      const src = m.material as THREE.MeshStandardMaterial;
+      const phys = new THREE.MeshPhysicalMaterial();
+      THREE.MeshStandardMaterial.prototype.copy.call(phys, src);
+      phys.clearcoat = 0.35;
+      phys.clearcoatRoughness = 0.42;
+      phys.envMapIntensity = 1.15;
+      m.material = phys;
+      m.castShadow = m.receiveShadow = false;
+      mats.push(phys);
     });
     prep?.(inner);
     const box = new THREE.Box3();
@@ -75,7 +84,7 @@ function addBadge(model: Model, tex: THREE.Texture, fx: number, fy: number, w: n
   const x = box.min.x + (box.max.x - box.min.x) * fx;
   const y = box.min.y + (box.max.y - box.min.y) * fy;
   const ray = new THREE.Raycaster(new THREE.Vector3(x, y, box.max.z + 1), new THREE.Vector3(0, 0, -1));
-  const hit = ray.intersectObject(model.root, true).find((h) => h.object.visible);
+  const hit = ray.intersectObject(model.root, true).find((h) => h.object.visible && !h.object.userData.badge);
   if (!hit || !hit.face) return;
   const img = tex.image as HTMLImageElement;
   const mat = new THREE.MeshStandardMaterial({
@@ -90,6 +99,7 @@ function addBadge(model: Model, tex: THREE.Texture, fx: number, fy: number, w: n
   const n = hit.face.normal.clone().transformDirection(hit.object.matrixWorld);
   badge.position.copy(hit.point).addScaledVector(n, 0.003);
   badge.lookAt(hit.point.clone().add(n));
+  badge.userData.badge = true;
   hit.object.attach(badge); // moves with doors
   mat.clippingPlanes = [model.plane];
   model.mats.push(mat);
@@ -117,10 +127,26 @@ function Rig() {
   // Close the door, then badge each model once (scene-graph setup, no React state).
   const ready = useMemo(() => {
     door?.quaternion.identity();
-    addBadge(board, badge, 0.5, 0.84, 0.95);
-    addBadge(kiosk, badge, 0.3, 0.84, 0.8);
-    addBadge(cooler, badge, 0.84, 0.55, 0.42);
+    // Board (door): brand, ID plate, arc-flash warning, isolation notice, service sticker.
+    addBadge(board, badge, 0.5, 0.86, 0.95);
+    addBadge(board, sign.idPlate("DB-01", "415 V · 3 PHASE · 50 Hz"), 0.5, 0.75, 0.62);
+    addBadge(board, sign.warning("ARC FLASH AND", "SHOCK HAZARD"), 0.3, 0.43, 0.5);
+    addBadge(board, sign.mandatory("ISOLATE BEFORE", "OPENING"), 0.3, 0.24, 0.55);
+    addBadge(board, sign.service(), 0.73, 0.2, 0.42);
+    // Kiosk: brand, DANGER sign, ID plate, service sticker.
+    addBadge(kiosk, badge, 0.3, 0.86, 0.8);
+    addBadge(kiosk, sign.idPlate("LV KIOSK K-2754", "DEACAM · SITE RETICULATION"), 0.5, 0.76, 0.62);
+    addBadge(kiosk, sign.danger("HIGH VOLTAGE", "KEEP OUT"), 0.5, 0.56, 0.62);
+    addBadge(kiosk, sign.service(), 0.5, 0.36, 0.5);
+    // Condensing unit: brand, refrigerant caution, inspection tag.
+    // (the drain pipe stretches the bounds downward, so the casing sits in the upper ~60%)
+    addBadge(cooler, badge, 0.84, 0.69, 0.42);
+    addBadge(cooler, sign.warning("REFRIGERANT UNDER", "PRESSURE"), 0.84, 0.575, 0.26);
+    addBadge(cooler, sign.tested(), 0.84, 0.82, 0.24);
+    // Crane: brand and safe working load plates.
     addBadge(crane, badge, 0.5, 0.9, 0.6);
+    addBadge(crane, sign.swl("SWL 10 t"), 0.3, 0.9, 0.5);
+    addBadge(crane, sign.swl("SWL 10 t"), 0.7, 0.9, 0.5);
     return true;
   }, [board, kiosk, cooler, crane, badge, door]);
 
