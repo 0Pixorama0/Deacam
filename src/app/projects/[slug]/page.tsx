@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { BreakdownCta } from "@/components/Blocks";
 import { Img } from "@/components/Img";
+import { Gallery } from "@/components/Gallery";
 import { Arrow } from "@/components/Icons";
 import { projects } from "@/content/site";
 
@@ -116,13 +117,15 @@ export default async function CaseStudy({ params }: PageProps<"/projects/[slug]"
       </section>
 
       {p.gallery && (
-        <section className="section" style={{ paddingTop: 0 }} data-nav="light" aria-label="Project gallery">
-          <div className="wrap gallery">
-            {p.gallery.map((g) => (
-              <div key={g} className="media" data-reveal="img">
-                <Img name={g} alt={`${p.name}: site photograph`} natural sizes="(max-width: 900px) 50vw, 33vw" />
-              </div>
-            ))}
+        <section className="section" style={{ paddingTop: 0 }} data-nav="light" aria-labelledby="gal-h">
+          <div className="wrap">
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 16, marginBottom: 32, flexWrap: "wrap" }}>
+              <h2 id="gal-h" className="h3">
+                On site
+              </h2>
+              <p className="label muted">{p.gallery.length} photos · tap to enlarge</p>
+            </div>
+            <Gallery images={p.gallery} title={p.name} />
           </div>
         </section>
       )}

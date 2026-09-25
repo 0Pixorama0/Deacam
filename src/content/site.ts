@@ -253,7 +253,7 @@ export const projects: Project[] = [
         ],
       },
     ],
-    gallery: ["wg-01", "wg-02", "wg-03", "wg-04", "wg-06", "wg-08", "westgate-warehouse", "wg-07"],
+    gallery: ["wg-01", "wg-02", "westgate-warehouse", "wg-03", "wg-04", "wg-06", "wg-08", "wg-07"],
   },
   {
     slug: "taswater-bryn-estyn",
@@ -299,7 +299,7 @@ export const projects: Project[] = [
         ],
       },
     ],
-    gallery: ["tw-09", "tw-16", "tw-11", "tw-06", "tw-01", "tw-12", "tw-04", "tw-02"],
+    gallery: ["tw-09", "tw-16", "tw-12", "tw-01", "tw-02", "tw-04", "tw-03", "tw-06", "tw-10", "tw-11", "tw-07", "tw-08", "tw-13", "tw-14", "tw-15"],
   },
   {
     slug: "custom-panel-builds",
@@ -344,7 +344,7 @@ export const projects: Project[] = [
         ],
       },
     ],
-    gallery: ["pn-10", "pn-03", "pn-08", "pn-16", "pn-02", "pn-21", "pn-12", "pn-15"],
+    gallery: ["pn-10", "pn-18", "pn-02", "pn-03", "pn-08", "pn-16", "pn-21", "pn-12", "pn-15", "pn-01", "pn-05", "pn-06", "pn-07", "pn-11", "pn-14", "pn-17", "pn-19", "pn-20", "pn-22", "pn-23"],
   },
   {
     slug: "bluescope-steel",
