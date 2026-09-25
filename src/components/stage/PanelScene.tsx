@@ -162,32 +162,40 @@ function Rig() {
     const mobile = stageStore.mobile;
     const st = s.current;
     const raw = stageV();
-    st.v = reduce ? snap(raw) : damp(st.v, raw, 5, dt);
-    st.px = damp(st.px, reduce ? 0 : stageStore.px, 3, dt);
-    st.py = damp(st.py, reduce ? 0 : stageStore.py, 3, dt);
+    // Desktop scroll is already smoothed by Lenis; a second heavy damp made the
+    // models lag behind the page. Track it closely there, softer on touch.
+    st.v = reduce ? snap(raw) : damp(st.v, raw, mobile ? 5 : 14, dt);
+    st.px = damp(st.px, reduce ? 0 : stageStore.px, 2.5, dt);
+    st.py = damp(st.py, reduce ? 0 : stageStore.py, 2.5, dt);
     const v = st.v;
     const time = state.clock.elapsedTime;
 
-    // Framing: models sit in the right-hand part of the frame at any aspect.
-    const aspect = size.width / size.height;
+    // Framing: every model sits at the origin and the camera looks straight at it,
+    // exactly like the phone layout. On desktop a lens shift (view offset) moves
+    // the whole render to the right of the copy, so there's no off-axis skew.
     const dist = mobile ? 11.5 : 9;
-    const halfW = Math.tan(THREE.MathUtils.degToRad(15)) * dist * aspect;
-    const ax = mobile ? 0 : Math.min(2.6, halfW * 0.44);
     const ay = mobile ? -0.95 : -1.45;
-    camera.position.set(st.px * 0.3, 0.6 + st.py * -0.2, dist);
-    camera.lookAt(0, mobile ? -1.2 : -0.05, 0);
+    const lookY = mobile ? -1.2 : -0.1;
+    const shift = mobile ? 0 : -size.width * (size.width < 1200 ? 0.23 : 0.2);
+    const pc = camera as THREE.PerspectiveCamera;
+    if (pc.view?.offsetX !== shift || pc.view?.fullWidth !== size.width || pc.view?.fullHeight !== size.height) {
+      if (shift) pc.setViewOffset(size.width, size.height, shift, 0, size.width, size.height);
+      else pc.clearViewOffset();
+    }
+    camera.position.set(st.px * 0.12, 0.6 - st.py * 0.08, dist);
+    camera.lookAt(0, lookY, 0);
 
-    const idle = reduce ? 0 : Math.sin(time * 0.25) * 0.05;
-    const tilt = st.px * 0.14;
+    const idle = reduce ? 0 : Math.sin(time * 0.25) * 0.04;
+    const tilt = st.px * 0.06;
     const k = mobile ? 0.72 : 1;
-    const place = (m: Model, yaw: number, dx = 0, sc = 1) => {
-      m.root.position.set(ax + (mobile ? 0 : dx), ay, 0);
-      m.root.rotation.set(st.py * 0.03, yaw + idle + tilt, 0);
+    const place = (m: Model, yaw: number, sc = 1) => {
+      m.root.position.set(0, ay, 0);
+      m.root.rotation.set(st.py * 0.02, yaw + idle + tilt, 0);
       m.root.scale.setScalar(m.base * k * sc);
     };
     place(board, -0.42 + smooth(1.8, 2.3, v) * 0.12);
     place(kiosk, -0.5);
-    place(crane, -0.45, -0.7, mobile ? 0.78 : 1);
+    place(crane, -0.45, mobile ? 0.78 : 0.92);
     place(cooler, -0.5);
 
     // Scan-line handover: a red line rises through the frame; the next model is
@@ -215,7 +223,7 @@ function Rig() {
     const on = p > 0 && p < 1 && !reduce;
     sc.visible = on;
     if (on) {
-      sc.position.set(ax, cut, 0);
+      sc.position.set(0, cut, 0);
       const fadeIO = Math.sin(Math.PI * p);
       sc.children.forEach((c) => (((c as THREE.Mesh).material as THREE.Material).opacity = fadeIO));
     }
@@ -227,7 +235,7 @@ function Rig() {
     }
 
     const fl = floor.current!;
-    fl.position.set(ax, ay + 0.002, 0);
+    fl.position.set(0, ay + 0.002, 0);
     const anyOn = (from && p < 1) || (to && p > 0);
     (fl.material as THREE.MeshBasicMaterial).opacity = anyOn ? (seq[Math.round(v)] === crane ? 0.35 : 0.9) : 0;
   });
