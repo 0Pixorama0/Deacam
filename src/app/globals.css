@@ -519,7 +519,7 @@ a.pcard:hover .pcard__go { transform: none; opacity: 1; }
 .rail__progress { height: 1px; background: var(--hair-dark); width: 160px; position: relative; }
 .rail__progress i { position: absolute; inset: 0; background: #fff; transform-origin: left; transform: scaleX(0); }
 @media (max-width: 860px) {
-  .rail__viewport { overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; }
+  .rail__viewport { overflow-x: auto; scroll-snap-type: x mandatory; scroll-padding-inline: var(--gutter); scrollbar-width: none; }
   .rail__viewport::-webkit-scrollbar { display: none; }
   .pcard { scroll-snap-align: start; width: 78vw; }
   .rail__progress { display: none; }
@@ -782,3 +782,76 @@ fieldset.field { border: 0; padding: 0; margin: 0; }
   *, *::before, *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; }
   .marquee__track { animation: none; flex-wrap: wrap; width: auto; gap: 12px 32px; }
 }
+
+/* ── Phone optimisation ───────────────────────────────────── */
+.mbar { display: none; }
+@media (max-width: 960px) {
+  /* Thumb-reach action bar: call the breakdown line or start a project from anywhere. */
+  .mbar {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 44;
+    padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
+    background: rgba(10, 11, 13, 0.88);
+    backdrop-filter: saturate(1.6) blur(18px); -webkit-backdrop-filter: saturate(1.6) blur(18px);
+    border-top: 1px solid var(--hair-dark);
+    transform: translateY(0); transition: transform .5s var(--ease-out);
+  }
+  .mbar a {
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    height: 48px; border-radius: var(--r2); font-size: 15px; font-weight: 500;
+  }
+  .mbar a:first-child { background: var(--red); color: #fff; }
+  .mbar a:last-child { background: #fff; color: var(--ink); }
+  .menu-open .mbar, .mbar.is-hidden { transform: translateY(110%); }
+  .footer { padding-bottom: calc(76px + env(safe-area-inset-bottom)); }
+}
+
+@media (max-width: 760px) {
+  :root { --section: 72px; --gutter: 20px; }
+  body { font-size: 16px; }
+  .lead { font-size: 18px; }
+  .statement { font-size: 28px; }
+  .phead { padding-top: calc(var(--nav-h) + 40px); padding-bottom: 40px; }
+  .phead__grid { margin-top: 20px; gap: 20px; }
+  .section--tight { padding-block: 56px; }
+
+  /* West Gate: no pin on phones; image then copy, both readable. */
+  .feature__pin { height: auto; overflow: visible; }
+  .feature__img { position: relative; inset: auto; aspect-ratio: 4 / 5; }
+  .feature__img::after { background: linear-gradient(180deg, rgba(10,11,13,0) 55%, rgba(10,11,13,1) 100%); }
+  .feature__copy { position: relative; inset: auto; margin-top: -96px; padding-bottom: 64px; }
+  .feature__stats b { font-size: 30px; }
+
+  /* Touch targets and comfortable density. */
+  .chip { height: 44px; }
+  .filters { flex-wrap: nowrap; overflow-x: auto; margin-inline: calc(-1 * var(--gutter)); padding-inline: var(--gutter); scrollbar-width: none; }
+  .filters::-webkit-scrollbar { display: none; }
+  .chip { flex: none; }
+  .logos__item { height: 56px; transform: scale(.78); }
+  .logos__track { gap: 28px; }
+  .logos__grid { grid-template-columns: repeat(3, 1fr); gap: 20px 12px; }
+  .logos__grid img { max-width: 100%; height: auto !important; }
+  .need { padding: 22px 0; }
+  .need__title { font-size: 22px; }
+  .svx__btn { padding: 18px 0; }
+  .svx__name { font-size: 24px; }
+  .quote { font-size: 24px; }
+  .cta__phone { font-size: 44px; }
+  .mosaic .off { margin-top: 32px; }
+  .footer__top { gap: 32px; padding-bottom: 48px; }
+  .details li { grid-template-columns: 96px 1fr; }
+  .division { padding-block: 56px; }
+  .case-hero { min-height: 560px; }
+  .next-case { grid-template-columns: 1fr; padding-block: 48px; }
+  .pbanner { height: 44vh; }
+  .rail__head { flex-direction: column; align-items: flex-start; padding-top: 72px; padding-bottom: 32px; }
+  .rail__head > div:last-child { justify-items: start !important; }
+}
+@media (max-width: 960px) {
+  /* keep the 3D chapter cards clear of the action bar */
+  .chapter { padding-bottom: calc(88px + env(safe-area-inset-bottom)); }
+  .hero { padding-bottom: calc(96px + env(safe-area-inset-bottom)); }
+}
+
+/* Never allow sideways scroll on phones. */
+html, body { overflow-x: clip; }

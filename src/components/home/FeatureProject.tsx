@@ -17,7 +17,7 @@ export function FeatureProject() {
   useGSAP(
     () => {
       const mm = gsap.matchMedia();
-      mm.add("(prefers-reduced-motion: no-preference)", () => {
+      mm.add("(min-width: 861px) and (prefers-reduced-motion: no-preference)", () => {
         const tl = gsap.timeline({
           scrollTrigger: { trigger: ".feature__pin", start: "top top", end: "+=110%", scrub: 1, pin: true },
         });

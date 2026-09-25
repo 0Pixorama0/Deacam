@@ -4,6 +4,7 @@ import "./globals.css";
 import { Nav } from "@/components/Nav";
 import { Footer } from "@/components/Footer";
 import { Motion } from "@/components/Motion";
+import { MobileBar } from "@/components/MobileBar";
 import { company } from "@/content/site";
 
 const inter = Inter({ variable: "--font-inter", subsets: ["latin"], display: "swap", axes: ["opsz"] });
@@ -31,6 +32,9 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   themeColor: "#0a0b0d",
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
 };
 
 const orgLd = {
@@ -75,6 +79,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <Nav />
         <main id="main">{children}</main>
         <Footer />
+        <MobileBar />
         <Motion />
       </body>
     </html>
