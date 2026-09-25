@@ -212,8 +212,8 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 .nav__phone i { width: 6px; height: 6px; border-radius: 50%; background: var(--red-live); animation: live 2.4s ease-in-out infinite; }
 @keyframes live { 0%, 100% { opacity: 1; } 50% { opacity: .35; } }
 .nav .btn { height: 40px; padding: 0 16px 0 18px; font-size: 14px; }
-.nav:not(.on-dark) .btn { --bg: var(--ink); --fg: #fff; --bd: var(--ink); }
-.nav.on-dark .btn { --bg: #fff; --fg: var(--ink); --bd: #fff; }
+.nav .btn, .nav.on-dark .btn { --bg: var(--red); --fg: #fff; --bd: var(--red); }
+.nav .btn:hover, .nav.on-dark .btn:hover { --bg: #a51927; --bd: #a51927; }
 .nav__burger { display: none; width: 44px; height: 44px; margin-right: -10px; position: relative; }
 .nav__burger span { position: absolute; left: 11px; right: 11px; height: 1.5px; background: currentColor; transition: transform .5s var(--ease-out), top .5s var(--ease-out); }
 .nav__burger span:nth-child(1) { top: 18px; }
@@ -803,8 +803,9 @@ html[data-motion="reduce"] *, html[data-motion="reduce"] *::before, html[data-mo
     display: flex; align-items: center; justify-content: center; gap: 8px;
     height: 48px; border-radius: var(--r2); font-size: 15px; font-weight: 500;
   }
-  .mbar a:first-child { background: var(--red); color: #fff; }
-  .mbar a:last-child { background: #fff; color: var(--ink); }
+  .mbar a:first-child { background: #fff; color: var(--ink); }
+  .mbar a:first-child svg { color: var(--red); }
+  .mbar a:last-child { background: var(--red); color: #fff; }
   .menu-open .mbar, .mbar.is-hidden { transform: translateY(110%); }
   .footer { padding-bottom: calc(76px + env(safe-area-inset-bottom)); }
 }

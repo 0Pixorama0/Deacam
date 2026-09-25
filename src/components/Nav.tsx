@@ -105,10 +105,10 @@ export function Nav() {
           ))}
         </ul>
         <div className="mmenu__foot">
-          <Btn href={company.phoneHref} variant="red">
+          <Btn href={company.phoneHref} variant="light">
             24/7 Breakdown {company.phone}
           </Btn>
-          <Btn href="/contact" variant="light">
+          <Btn href="/contact" variant="red">
             Start a project
           </Btn>
           <a href={company.staffLogin} className="mmenu__login" target="_blank" rel="noopener">

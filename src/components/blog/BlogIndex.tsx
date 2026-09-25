@@ -74,7 +74,7 @@ export function BlogIndex() {
                     </button>
                   </>
                 ) : (
-                  <button className="btn btn--ghost" onClick={() => setGate(true)}>
+                  <button className="btn btn--red" onClick={() => setGate(true)}>
                     <span>Editor sign in</span>
                   </button>
                 )}
