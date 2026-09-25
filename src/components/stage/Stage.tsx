@@ -85,7 +85,7 @@ export function Stage() {
             South Wales and Tasmania, plus the on-site labour to keep it running.
           </p>
           <div className="hero__ctas" data-reveal="fade" data-delay="0.5">
-            <Btn href="/contact" variant="light" magnetic>
+            <Btn href="/contact" variant="red" magnetic>
               Talk to an engineer
             </Btn>
             <Btn href="/projects" variant="ghost">
