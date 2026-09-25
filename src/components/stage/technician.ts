@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { clone as cloneSkinned } from "three/examples/jsm/utils/SkeletonUtils.js";
 
 /*
   An original DEACAM technician in a friendly animated-film style (yellow hard
@@ -505,4 +506,78 @@ export function pose(t: Technician, p: PoseInput) {
   t.thighR.rotation.x = -j.lR;
   t.shinL.rotation.x = j.sL;
   t.shinR.rotation.x = j.sR;
+}
+
+
+// ── Blender body driven by the procedural rig ──────────────────
+/*
+  The Blender GLB (public/models/technician.glb) is one continuous skinned
+  body with bones named like the rig above. We keep the procedural rig as an
+  invisible driver: its joints are posed by pose(), and every frame each bone
+  is set to follow its driver joint. Props stay on the driver's hands.
+*/
+export type Rigged = { tech: Technician; update: () => void };
+
+const JOINT_NAMES = ["hips", "torso", "head", "thighL", "thighR", "shinL", "shinR", "armL", "armR", "foreL", "foreR", "handL", "handR"] as const;
+
+export function buildRiggedTechnician(source: THREE.Object3D): Rigged {
+  const tech = buildTechnician();
+  // Own copy (with its own skeleton): the loaded scene is shared and may be built twice in dev.
+  const body = cloneSkinned(source);
+  // Drop the procedural body meshes; keep only the props.
+  const propRoots = new Set<THREE.Object3D>(Object.values(tech.props));
+  const doomed: THREE.Mesh[] = [];
+  tech.root.traverse((o) => {
+    if (!(o as THREE.Mesh).isMesh) return;
+    let p: THREE.Object3D | null = o;
+    while (p && !propRoots.has(p)) p = p.parent;
+    if (!p) doomed.push(o as THREE.Mesh);
+  });
+  doomed.forEach((m) => m.parent?.remove(m));
+
+  body.traverse((o) => {
+    const m = o as THREE.Mesh;
+    if (m.isMesh) {
+      m.castShadow = true;
+      m.frustumCulled = false;
+      const mat = m.material as THREE.MeshStandardMaterial;
+      mat.envMapIntensity = 1.1;
+    }
+  });
+  tech.root.add(body);
+
+  const driver: Record<(typeof JOINT_NAMES)[number], THREE.Object3D> = {
+    hips: tech.hips,
+    torso: tech.torso,
+    head: tech.head,
+    thighL: tech.thighL,
+    thighR: tech.thighR,
+    shinL: tech.shinL,
+    shinR: tech.shinR,
+    armL: tech.armL,
+    armR: tech.armR,
+    foreL: tech.foreL,
+    foreR: tech.foreR,
+    handL: tech.tipL.parent!,
+    handR: tech.tipR.parent!,
+  };
+  const bones = JOINT_NAMES.map((n) => ({ n, bone: body.getObjectByName(n)!, drv: driver[n] })).filter((b) => b.bone);
+
+  // Rest offsets: bone world relative to its driver joint world, at rest.
+  tech.root.updateMatrixWorld(true);
+  const inv = new THREE.Matrix4();
+  const offsets = bones.map(({ bone, drv }) => inv.copy(drv.matrixWorld).invert().multiply(bone.matrixWorld).clone());
+
+  const want = new THREE.Matrix4();
+  const local = new THREE.Matrix4();
+  const update = () => {
+    tech.root.updateMatrixWorld(true);
+    bones.forEach(({ bone, drv }, i) => {
+      want.multiplyMatrices(drv.matrixWorld, offsets[i]);
+      local.copy(bone.parent!.matrixWorld).invert().multiply(want);
+      local.decompose(bone.position, bone.quaternion, bone.scale);
+      bone.updateMatrixWorld(true);
+    });
+  };
+  return { tech, update };
 }

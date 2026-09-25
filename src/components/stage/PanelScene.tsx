@@ -7,7 +7,7 @@ import * as THREE from "three";
 import { clamp, smooth, stageStore, stageV } from "./store";
 import * as sign from "./signs";
 import { buildBreakerRows } from "./breakers";
-import { buildTechnician, pose, type Task } from "./technician";
+import { buildRiggedTechnician, pose, type Task } from "./technician";
 import { buildWorkGear, updateWorkGear } from "./workgear";
 
 /*
@@ -27,6 +27,7 @@ const MODELS = {
   kiosk: "/models/utility_box_01.glb",
   crane: "/models/overhead_crane.glb",
   cooler: "/models/exterior_aircon_unit.glb",
+  tech: "/models/technician.glb",
 };
 Object.values(MODELS).forEach((u) => useGLTF.preload(u));
 
@@ -240,11 +241,13 @@ function Rig() {
     t.colorSpace = THREE.SRGBColorSpace;
     return t;
   }, []);
-  const tech = useMemo(() => {
-    const t = buildTechnician();
-    t.root.scale.setScalar(0.86);
-    return t;
-  }, []);
+  const techGltf = useGLTF(MODELS.tech);
+  const rigged = useMemo(() => {
+    const r = buildRiggedTechnician(techGltf.scene);
+    r.tech.root.scale.setScalar(0.86);
+    return r;
+  }, [techGltf]);
+  const tech = rigged.tech;
   const gear = useMemo(() => buildWorkGear(), []);
   const walk = useRef({ x: -4.6, z: 0.9, yaw: Math.PI / 2, phase: 0, stride: 0, start: -1 });
   const { camera, size } = useThree();
@@ -338,7 +341,7 @@ function Rig() {
     if (!mobile) {
       // Rest spots per chapter: [x, z, facing yaw]. Chapter 2 is the board's handle side.
       const REST: [number, number, number][] = [
-        [-1.18, 0.95, 0.72],
+        [-1.05, 0.95, 0.72],
         [-1.05, 0.9, 0.65],
         [1.35, 0.9, -1.15],
         [-1.2, 1.3, 0.45],
@@ -400,6 +403,7 @@ function Rig() {
                 ? { signal: 1 }
                 : { gauge: 1 };
       pose(tech, { phase: w.phase, stride: w.stride, tasks, time });
+      rigged.update();
       const still = 1 - w.stride;
       const eff: Partial<Record<Task, number>> = {};
       for (const k in tasks) eff[k as Task] = (tasks[k as Task] ?? 0) * still;
