@@ -75,6 +75,9 @@ export function Nav() {
               <i aria-hidden="true" />
               24/7 {company.phone}
             </a>
+            <a href={company.staffLogin} className="nav__login" target="_blank" rel="noopener" aria-label="Staff login (opens in a new tab)">
+              Login
+            </a>
             <Btn href="/contact">Start a project</Btn>
             <button
               className="nav__burger"
@@ -108,6 +111,9 @@ export function Nav() {
           <Btn href="/contact" variant="light">
             Start a project
           </Btn>
+          <a href={company.staffLogin} className="mmenu__login" target="_blank" rel="noopener">
+            Staff login
+          </a>
         </div>
       </div>
     </>

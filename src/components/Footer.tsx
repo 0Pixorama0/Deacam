@@ -32,6 +32,7 @@ export function Footer() {
               <li><Link href="/about">About</Link></li>
               <li><Link href="/projects">Projects</Link></li>
               <li><Link href="/industries">Industries</Link></li>
+              <li><Link href="/blog">Blog</Link></li>
               <li><Link href="/contact">Contact</Link></li>
               <li><a href={company.social.linkedin} target="_blank" rel="noopener">LinkedIn</a></li>
               <li><a href={company.social.instagram} target="_blank" rel="noopener">Instagram</a></li>

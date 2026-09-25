@@ -39,3 +39,11 @@ Everything on the site comes from deacam.com.au (read September 2026) or the cli
   overhead_crane, exterior_aircon_unit, plus the studio_small_09 HDRI. CC0 means no attribution or licence fee.
   The DEACAM badges are added in code. For a bespoke look, DEACAM's own panel CAD (from the workshop) could replace
   the distribution board model with no code changes beyond the file path.
+
+## Blog
+- Four sample articles are written only from facts on deacam.com.au (Bryn Estyn, Benalla/West Gate, the panel
+  workshop and apprentices, the refrigeration division). Their **dates are placeholders**; confirm or replace.
+- Editor sign-in (passphrase `deacam`) and all edits are **browser-only**, the same approach as the Pixorama site:
+  posts written in the composer are saved to that browser's localStorage and are not visible to anyone else.
+  Real publishing needs a CMS or backend (for example Sanity, or a database with proper authentication).
+- The nav **Login** button links to the existing staff portal: https://deacam.maaps.com.au
