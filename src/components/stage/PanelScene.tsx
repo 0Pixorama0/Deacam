@@ -141,8 +141,9 @@ function mountBreakers(model: Model, door: THREE.Object3D | null) {
   model.mats.push(...extra);
 }
 
-function placeTech(o: THREE.Object3D, x: number, y: number, z: number, yaw: number) {
+function placeTech(o: THREE.Object3D, x: number, y: number, z: number, yaw: number, scale: number) {
   o.position.set(x, y, z);
+  o.scale.setScalar(scale);
   o.rotation.y = yaw;
 }
 
@@ -244,7 +245,6 @@ function Rig() {
   const techGltf = useGLTF(MODELS.tech);
   const rigged = useMemo(() => {
     const r = buildRiggedTechnician(techGltf.scene);
-    r.tech.root.scale.setScalar(0.86);
     return r;
   }, [techGltf]);
   const tech = rigged.tech;
@@ -295,7 +295,7 @@ function Rig() {
     place(board, -0.42 + smooth(1.8, 2.3, v) * 0.12);
     place(kiosk, -0.5);
     // crane hangs overhead on desktop, clear of the technician
-    place(crane, -0.45, mobile ? 0.78 : 0.92, mobile ? 0 : 1.6);
+    place(crane, -0.45, mobile ? 0.78 : 0.92, 1.6 * k); // hung overhead, clear of the technician
     place(cooler, -0.5);
 
     // Scan-line handover: a red line rises through the frame; the next model is
@@ -337,8 +337,11 @@ function Rig() {
 
     // ── Technician: walks between units, opens the board, looks up at the crane ──
     const w = walk.current;
-    setVisible(tech.root, !mobile);
-    if (!mobile) {
+    // Phones: everything is centred and scaled by k; he appears once the headline has scrolled away.
+    const ms = mobile ? k : 1;
+    const techOn = !mobile || v > 0.12;
+    setVisible(tech.root, techOn);
+    if (techOn) {
       // Rest spots per chapter: [x, z, facing yaw]. Chapter 2 is the board's handle side.
       const REST: [number, number, number][] = [
         [-1.05, 0.95, 0.72],
@@ -347,6 +350,12 @@ function Rig() {
         [-1.2, 1.3, 0.45],
         [-1.45, 0.9, 0.7],
       ];
+      if (mobile) {
+        for (const r of REST) {
+          r[0] *= ms * 0.82;
+          r[1] = r[1] * ms + 0.2;
+        }
+      }
       let tx: number;
       let tz: number;
       let restYaw: number;
@@ -355,8 +364,8 @@ function Rig() {
         const [x0, z0] = REST[i];
         const [x1, z1] = REST[i + 1];
         const cross = Math.sign(x0) !== Math.sign(x1);
-        const cx = cross ? 0 : Math.min(x0, x1) - 0.9;
-        const cz = cross ? 2.3 : 1.35;
+        const cx = cross ? 0 : Math.min(x0, x1) - 0.9 * ms;
+        const cz = cross ? 2.3 * ms + (mobile ? 0.2 : 0) : 1.35 * ms + (mobile ? 0.2 : 0);
         const t = p;
         tx = (1 - t) * (1 - t) * x0 + 2 * (1 - t) * t * cx + t * t * x1;
         tz = (1 - t) * (1 - t) * z0 + 2 * (1 - t) * t * cz + t * t * z1;
@@ -367,11 +376,12 @@ function Rig() {
       }
       // Walk in from the left when the page first appears.
       if (w.start < 0) w.start = time;
-      if (!reduce && v < 0.35) {
-        const intro = smooth(0.4, 3.2, time - w.start);
+      if (!reduce && v < 0.6) {
+        // desktop: walks in over the first seconds; phones: walks in as you scroll past the headline
+        const intro = mobile ? smooth(0.12, 0.55, v) : smooth(0.4, 3.2, time - w.start);
         if (intro < 1) {
-          tx = THREE.MathUtils.lerp(-4.6, tx, intro);
-          tz = THREE.MathUtils.lerp(1.3, tz, intro);
+          tx = THREE.MathUtils.lerp(mobile ? -3.2 : -4.6, tx, intro);
+          tz = THREE.MathUtils.lerp(1.3 * ms, tz, intro);
         }
       }
       if (reduce) {
@@ -383,12 +393,12 @@ function Rig() {
       const d = Math.hypot(dx, dz);
       w.x = tx;
       w.z = tz;
-      const speed = d / Math.max(dt, 1e-3);
+      const speed = d / ms / Math.max(dt, 1e-3);
       w.stride = damp(w.stride, reduce ? 0 : Math.min(1, speed / 1.1), 8, dt);
-      w.phase += d * 5.2;
+      w.phase += (d / ms) * 5.2;
       const targetYaw = w.stride > 0.25 ? Math.atan2(dx, dz) : restYaw;
       w.yaw = damp(w.yaw, targetYaw, 7, dt);
-      placeTech(tech.root, w.x, ay, w.z, w.yaw);
+      placeTech(tech.root, w.x, ay, w.z, w.yaw, 0.86 * ms * (mobile ? 0.78 : 1));
       // Task at the current unit (time-looped while he stands there).
       const station = p > 0 && p < 1 ? (p < 0.5 ? i : i + 1) : p >= 1 ? Math.min(4, i + 1) : i;
       const opening = smooth(1.7, 1.85, v) * (1 - smooth(2.28, 2.4, v));
@@ -408,15 +418,15 @@ function Rig() {
       const eff: Partial<Record<Task, number>> = {};
       for (const k in tasks) eff[k as Task] = (tasks[k as Task] ?? 0) * still;
       updateWorkGear(gear, tech, eff, {
-        kioskEntry: new THREE.Vector3(-0.42, ay + 0.3, 0.42),
-        hoist: new THREE.Vector3(0.05, ay + 1.6 + 1.05, 0.15),
-        coolerPort: new THREE.Vector3(-0.62, ay + 1.38, 0.42),
+        kioskEntry: new THREE.Vector3(-0.42 * k, ay + 0.3 * k, 0.42 * k),
+        hoist: new THREE.Vector3(0.05 * k, ay + 1.6 * k + 1.05 * k * (mobile ? 0.78 / 0.92 : 1), 0.15 * k),
+        coolerPort: new THREE.Vector3(-0.62 * k, ay + 1.38 * k, 0.42 * k),
         floorY: ay,
         techPos: new THREE.Vector3(w.x, ay, w.z),
         techYaw: w.yaw,
       });
     }
-    setVisible(gear.group, !mobile);
+    setVisible(gear.group, techOn);
 
     const fl = floor.current!;
     fl.position.set(0, ay + 0.002, 0);
