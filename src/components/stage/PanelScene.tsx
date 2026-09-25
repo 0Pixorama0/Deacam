@@ -7,6 +7,7 @@ import * as THREE from "three";
 import { clamp, smooth, stageStore, stageV } from "./store";
 import * as sign from "./signs";
 import { buildBreakerRows } from "./breakers";
+import { buildTechnician, pose } from "./technician";
 
 /*
   Photoreal CC0 models (Poly Haven, compressed to GLB) carrying DEACAM
@@ -138,6 +139,11 @@ function mountBreakers(model: Model, door: THREE.Object3D | null) {
   model.mats.push(...extra);
 }
 
+function placeTech(o: THREE.Object3D, x: number, y: number, z: number, yaw: number) {
+  o.position.set(x, y, z);
+  o.rotation.y = yaw;
+}
+
 /** Scene-graph mutation kept outside the component body (React compiler rule). */
 function setVisible(o: THREE.Object3D | undefined, on: boolean) {
   if (o) o.visible = on;
@@ -233,6 +239,12 @@ function Rig() {
     t.colorSpace = THREE.SRGBColorSpace;
     return t;
   }, []);
+  const tech = useMemo(() => {
+    const t = buildTechnician();
+    t.root.scale.setScalar(0.86);
+    return t;
+  }, []);
+  const walk = useRef({ x: -4.6, z: 0.9, yaw: Math.PI / 2, phase: 0, stride: 0, start: -1 });
   const { camera, size } = useThree();
   const s = useRef({ v: 0, px: 0, py: 0 });
   const q = useMemo(() => new THREE.Quaternion(), []);
@@ -270,14 +282,15 @@ function Rig() {
     const idle = reduce ? 0 : Math.sin(time * 0.25) * 0.04;
     const tilt = st.px * 0.06;
     const k = mobile ? 0.72 : 1;
-    const place = (m: Model, yaw: number, sc = 1) => {
-      m.root.position.set(0, ay, 0);
+    const place = (m: Model, yaw: number, sc = 1, lift = 0) => {
+      m.root.position.set(0, ay + lift, 0);
       m.root.rotation.set(st.py * 0.02, yaw + idle + tilt, 0);
       m.root.scale.setScalar(m.base * k * sc);
     };
     place(board, -0.42 + smooth(1.8, 2.3, v) * 0.12);
     place(kiosk, -0.5);
-    place(crane, -0.45, mobile ? 0.78 : 0.92);
+    // crane hangs overhead on desktop, clear of the technician
+    place(crane, -0.45, mobile ? 0.78 : 0.92, mobile ? 0 : 1.6);
     place(cooler, -0.5);
 
     // Scan-line handover: a red line rises through the frame; the next model is
@@ -317,6 +330,72 @@ function Rig() {
       setVisible(board.root.userData.breakers as THREE.Object3D | undefined, smooth(1.8, 2.25, v) > 0.08);
     }
 
+    // ── Technician: walks between units, opens the board, looks up at the crane ──
+    const w = walk.current;
+    setVisible(tech.root, !mobile);
+    if (!mobile) {
+      // Rest spots per chapter: [x, z, facing yaw]. Chapter 2 is the board's handle side.
+      const REST: [number, number, number][] = [
+        [-1.18, 0.95, 0.72],
+        [-1.05, 0.9, 0.65],
+        [1.35, 0.9, -1.15],
+        [-1.2, 1.3, 0.45],
+        [-1.45, 0.9, 0.7],
+      ];
+      let tx: number;
+      let tz: number;
+      let restYaw: number;
+      if (i < 4 && p > 0 && p < 1) {
+        // Quadratic path between spots; cross in front when changing sides.
+        const [x0, z0] = REST[i];
+        const [x1, z1] = REST[i + 1];
+        const cross = Math.sign(x0) !== Math.sign(x1);
+        const cx = cross ? 0 : Math.min(x0, x1) - 0.9;
+        const cz = cross ? 2.3 : 1.35;
+        const t = p;
+        tx = (1 - t) * (1 - t) * x0 + 2 * (1 - t) * t * cx + t * t * x1;
+        tz = (1 - t) * (1 - t) * z0 + 2 * (1 - t) * t * cz + t * t * z1;
+        restYaw = REST[p < 0.5 ? i : i + 1][2];
+      } else {
+        const r = REST[p >= 1 ? Math.min(4, i + 1) : i];
+        [tx, tz, restYaw] = r;
+      }
+      // Walk in from the left when the page first appears.
+      if (w.start < 0) w.start = time;
+      if (!reduce && v < 0.35) {
+        const intro = smooth(0.4, 3.2, time - w.start);
+        if (intro < 1) {
+          tx = THREE.MathUtils.lerp(-4.6, tx, intro);
+          tz = THREE.MathUtils.lerp(1.3, tz, intro);
+        }
+      }
+      if (reduce) {
+        w.x = tx;
+        w.z = tz;
+      }
+      const dx = tx - w.x;
+      const dz = tz - w.z;
+      const d = Math.hypot(dx, dz);
+      w.x = tx;
+      w.z = tz;
+      const speed = d / Math.max(dt, 1e-3);
+      w.stride = damp(w.stride, reduce ? 0 : Math.min(1, speed / 1.1), 8, dt);
+      w.phase += d * 5.2;
+      const targetYaw = w.stride > 0.25 ? Math.atan2(dx, dz) : restYaw;
+      w.yaw = damp(w.yaw, targetYaw, 7, dt);
+      placeTech(tech.root, w.x, ay, w.z, w.yaw);
+      const reach = smooth(1.62, 1.82, v) * (1 - smooth(2.35, 2.55, v));
+      const look = smooth(2.6, 2.9, v) * (1 - smooth(3.35, 3.6, v));
+      pose(tech, {
+        phase: w.phase,
+        stride: w.stride,
+        reach,
+        look,
+        tablet: Math.max(0, 1 - w.stride * 1.4 - reach * 1.5 - look * 1.2),
+        breathe: time,
+      });
+    }
+
     const fl = floor.current!;
     fl.position.set(0, ay + 0.002, 0);
     const anyOn = (from && p < 1) || (to && p > 0);
@@ -329,6 +408,7 @@ function Rig() {
       <primitive object={kiosk.root} />
       <primitive object={crane.root} />
       <primitive object={cooler.root} />
+      <primitive object={tech.root} />
       <group ref={scan} visible={false}>
         <mesh rotation={[-Math.PI / 2, 0, 0]}>
           <planeGeometry args={[5.2, 2.6]} />
