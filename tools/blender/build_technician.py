@@ -44,8 +44,8 @@ M = {k: mat(k, srgb(v), r, mt) for k, (v, r, mt) in {
     "jeans": ("#4b77ad", 0.72, 0), "jeansLight": ("#5f8bc0", 0.7, 0), "belt": ("#5a3219", 0.5, 0),
     "buckle": ("#c9a24a", 0.3, 0.8), "pouch": ("#ef6e1c", 0.55, 0), "toolY": ("#e8b21e", 0.45, 0),
     "toolG": ("#8e959d", 0.3, 0.8), "boot": ("#8a4b26", 0.42, 0), "sole": ("#4a2a16", 0.8, 0),
-    "hair": ("#1d1f24", 0.55, 0), "brow": ("#1d1f24", 0.6, 0), "white": ("#ffffff", 0.25, 0),
-    "iris": ("#6b3a1c", 0.3, 0), "pupil": ("#111111", 0.2, 0), "lip": ("#b8614f", 0.55, 0),
+    "hair": ("#1d1f24", 0.55, 0), "brow": ("#2a1f18", 0.7, 0), "white": ("#ffffff", 0.25, 0),
+    "iris": ("#6b3a1c", 0.3, 0), "pupil": ("#111111", 0.2, 0), "lip": ("#c47a6a", 0.5, 0),
     "cheek": ("#e8977a", 0.55, 0), "hat": ("#f7b516", 0.32, 0), "hatDark": ("#e39c0c", 0.38, 0),
     "red": ("#bf1e2e", 0.45, 0),
 }.items()}
@@ -110,7 +110,7 @@ J = {
     "hips": Vector((0, 0, HIP)),
     "spine": Vector((0, 0, HIP + 0.16)),
     "neck": Vector((0, 0, HIP + 0.16 + 0.86)),
-    "headTop": Vector((0, 0, HIP + 0.16 + 0.86 + 0.66)),
+    "headTop": Vector((0, 0, HIP + 0.16 + 0.86 + 0.6)),
 }
 SH_Z = HIP + 0.16 + 0.74
 def side(s):
@@ -182,7 +182,7 @@ IDX = {n: i for i, n in enumerate(["skin", "polo", "jeans", "belt"])}
 for p in body_me.polygons:
     c = p.center
     ax = abs(c.x)
-    if c.z > HIP + 0.99 and ax < 0.13:
+    if c.z > HIP + 1.02 and ax < 0.12:
         m = "skin"  # neck
     elif ax > 0.3 and c.z > HIP - 0.1:  # arms
         m = "polo" if c.z > SH_Z - 0.24 else "skin"
@@ -258,53 +258,125 @@ def attach(ob, bone_name):
     bpy.context.view_layer.update()
     ob.matrix_world = mw
 
-# ── head ───────────────────────────────────────────────────────
-HC = J["neck"] + Vector((0, 0, 0.34))
-FZ = -0.29  # face plane (y) ≈ front of head
+# ── head: one sculpted surface (human proportions) ─────────────
+HC = J["neck"] + Vector((0, 0, 0.29))
+HR = 0.25  # head radius before shaping
 parts = []
 def part(name, bm, material, bone_name="head"):
     ob = new_obj(name, bm, material)
     parts.append((ob, bone_name))
     return ob
-part("skull", xf(sphere(0.31, 48, 24), s=(0.96, 0.94, 1.06), t=HC), "skin")
-part("jaw", xf(sphere(0.2, 32, 16), s=(1.15, 0.9, 0.85), t=HC + Vector((0, -0.07, -0.13))), "skin")
-part("nose", xf(sphere(0.052, 20, 12), s=(0.9, 1.1, 0.85), t=HC + Vector((0, -0.3, -0.03))), "skin")
+
+def g(p, c, s, a):
+    """anisotropic gaussian bump on the unit sphere"""
+    d = [(p[i] - c[i]) / s[i] for i in range(3)]
+    return a * math.exp(-(d[0] ** 2 + d[1] ** 2 + d[2] ** 2))
+
+BUMPS = [
+    # (centre on unit sphere, sigma xyz, amplitude)   front is -Y
+    ((0.0, -0.9, -0.72), (0.24, 0.25, 0.12), 0.04),   # chin
+    ((0.33, -0.88, 0.12), (0.13, 0.2, 0.1), -0.075),  # eye socket R
+    ((-0.33, -0.88, 0.12), (0.13, 0.2, 0.1), -0.075), # eye socket L
+    ((0.3, -0.9, 0.3), (0.2, 0.2, 0.06), 0.03),       # brow ridge R
+    ((-0.3, -0.9, 0.3), (0.2, 0.2, 0.06), 0.03),      # brow ridge L
+    ((0.0, -0.98, 0.02), (0.07, 0.2, 0.2), 0.16),     # nose bridge
+    ((0.0, -0.95, -0.2), (0.1, 0.2, 0.08), 0.13),     # nose tip
+    ((0.11, -0.93, -0.25), (0.06, 0.2, 0.05), 0.05),  # nostril wing R
+    ((-0.11, -0.93, -0.25), (0.06, 0.2, 0.05), 0.05), # nostril wing L
+    ((0.55, -0.72, -0.05), (0.18, 0.2, 0.12), 0.035), # cheekbone R
+    ((-0.55, -0.72, -0.05), (0.18, 0.2, 0.12), 0.035),# cheekbone L
+    ((0.0, -0.94, -0.41), (0.15, 0.2, 0.04), 0.05),   # upper lip
+    ((0.0, -0.93, -0.5), (0.13, 0.2, 0.04), 0.055),   # lower lip
+    ((0.0, -0.95, -0.455), (0.17, 0.2, 0.01), -0.035),# mouth line
+    ((0.0, -0.96, -0.32), (0.035, 0.2, 0.05), -0.012),# philtrum
+]
+LIPS = [((0.0, -0.94, -0.41), (0.15, 0.2, 0.04)), ((0.0, -0.93, -0.5), (0.13, 0.2, 0.04))]
+head_bm = sphere(1, 128, 96)
+lip_amt = {}
+for v in head_bm.verts:
+    p = v.co.normalized()
+    d = sum(g(p, c, sg, a) for (c, sg, a) in BUMPS)
+    lip_amt[v.index] = max(g(p, c, sg, 1.0) for (c, sg) in LIPS)
+    q = p * (1 + d)
+    # skull: taller, narrower; jaw tapers below the cheekbones
+    sx = 0.82 * (1 - 0.13 * max(0.0, -p.z - 0.15))
+    sy = 0.92 * (1 - 0.08 * max(0.0, -p.z - 0.2))
+    v.co = Vector((q.x * sx, q.y * sy, q.z * 1.04)) * HR
+xf(head_bm, t=HC)
+head_bm.verts.ensure_lookup_table()
+lip_faces = [f.index for f in head_bm.faces if sum(lip_amt[v.index] for v in f.verts) / len(f.verts) > 0.45]
+face = part("face", head_bm, "skin")
+face.data.materials.append(M["lip"])
+for i in lip_faces:
+    face.data.polygons[i].material_index = 1
+
+# eyes: eyeball, iris, pupil, highlight, upper eyelid
 for s in (-1, 1):
-    part(f"ear{s}", xf(sphere(0.075, 16, 10), s=(0.5, 0.8, 1), t=HC + Vector((s * 0.305, 0, -0.02))), "skin")
-    ec = HC + Vector((s * 0.11, -0.25, 0.04))
-    part(f"eyeW{s}", xf(sphere(0.066, 24, 14), s=(1, 0.6, 1.12), t=ec), "white")
-    part(f"iris{s}", xf(sphere(0.043, 20, 10), s=(1, 0.25, 1), t=ec + Vector((0, -0.036, -0.004))), "iris")
-    part(f"pupil{s}", xf(sphere(0.023, 16, 8), s=(1, 0.25, 1), t=ec + Vector((0, -0.045, -0.004))), "pupil")
-    part(f"glint{s}", xf(sphere(0.009, 8, 6), s=(1, 0.4, 1), t=ec + Vector((0.013, -0.05, 0.012))), "white")
-    part(f"brow{s}", xf(cyl(0.024, 0.02, 0.11, 16), r=(0, math.pi / 2 + s * 0.18, 0), t=HC + Vector((s * 0.11, -0.27, 0.15))), "brow")
-    part(f"cheek{s}", xf(sphere(0.046, 16, 8), s=(1, 0.2, 0.8), t=HC + Vector((s * 0.17, -0.262, -0.07))), "cheek")
-smile = keep(torus(0.07, 0.011, 32, 10), lambda co: co.y < -0.02)
-part("smile", xf(smile, r=(math.pi / 2, 0, 0), t=HC + Vector((0, -0.285, -0.075))), "lip")
-# hair: back and sides + fringe
-hair = keep(sphere(0.318, 40, 20), lambda co: co.y > -0.12 and co.z > -0.04)
-part("hair", xf(hair, s=(0.97, 0.95, 1.02), t=HC + Vector((0, 0.01, 0.01))), "hair")
-for k in range(-2, 3):
-    part(f"fringe{k}", xf(cyl(0.04, 0.0, 0.09, 8), r=(-0.6, 0, k * 0.2), t=HC + Vector((k * 0.06, -0.25, 0.215))), "hair")
+    ec = HC + Vector((s * 0.33 * 0.82 * HR, -0.76 * 0.92 * HR, 0.12 * 1.04 * HR))
+    er = 0.04
+    part(f"eyeball{s}", xf(sphere(er, 24, 16), t=ec), "white")
+    part(f"iris{s}", xf(sphere(er * 0.44, 20, 10), s=(1, 0.3, 1), t=ec + Vector((0, -er * 0.92, 0))), "iris")
+    part(f"pupil{s}", xf(sphere(er * 0.24, 12, 8), s=(1, 0.3, 1), t=ec + Vector((0, -er * 0.99, 0))), "pupil")
+    part(f"glint{s}", xf(sphere(er * 0.08, 8, 6), t=ec + Vector((er * 0.18, -er * 1.02, er * 0.2))), "white")
+    lid = keep(sphere(er * 1.1, 24, 16), lambda co: co.z > er * 0.42 and co.y < er * 0.4)
+    part(f"lid{s}", xf(lid, t=ec), "skin")
+    low = keep(sphere(er * 1.07, 24, 16), lambda co: co.z < -er * 0.45 and co.y < er * 0.3)
+    part(f"lowlid{s}", xf(low, t=ec), "skin")
+    # natural brows: tapered, slightly arched
+    brow = bmesh.new()
+    prev = None
+    ring = 8
+    rows = []
+    for k in range(13):
+        t = (k - 6) / 6  # -1 inner … +1 outer (mirrored per side)
+        cx = s * (t * 0.034 + 0.004)
+        cz = er * 1.45 + 0.01 * (1 - t * t) - 0.003 * t
+        r = 0.0075 * (1.2 - 0.55 * max(0.0, t)) if t > -0.8 else 0.006
+        row = []
+        for j in range(ring):
+            b2 = math.tau * j / ring
+            row.append(brow.verts.new(ec + Vector((cx, -er * 0.97 + math.sin(b2) * r * 0.5, cz + math.cos(b2) * r))))
+        rows.append(row)
+    for k in range(len(rows) - 1):
+        a0, a1 = rows[k], rows[k + 1]
+        for j in range(ring):
+            brow.faces.new((a0[j], a0[(j + 1) % ring], a1[(j + 1) % ring], a1[j]))
+    part(f"brow{s}", brow, "brow")
+# ears
 for s in (-1, 1):
-    part(f"burn{s}", xf(sphere(0.1, 12, 8), s=(0.45, 0.8, 1.1), t=HC + Vector((s * 0.285, 0.02, 0.06))), "hair")
-# hard hat
-HT = HC + Vector((0, 0, 0.15))
-dome = keep(sphere(0.34, 48, 24), lambda co: co.z >= -0.001)
-part("hatDome", xf(dome, s=(1, 1.08, 0.95), t=HT), "hat")
-part("hatBrim", xf(cyl(0.38, 0.37, 0.035, 48), s=(1, 1.12, 1), t=HT + Vector((0, -0.02, 0))), "hatDark")
-peak = keep(cyl(0.25, 0.22, 0.03, 32), lambda co: co.y <= 0.001)
-part("hatPeak", xf(peak, s=(1, 0.75, 1), t=HT + Vector((0, -0.27, 0.005))), "hat")
-ridge = keep(torus(0.33, 0.03, 40, 10, math.pi), lambda co: True)
-part("hatRidge", xf(ridge, s=(1.08, 1, 0.95), r=(math.pi / 2, 0, math.pi / 2), t=HT), "hatDark")
+    ear = sphere(1, 20, 12)
+    for v in ear.verts:
+        v.co = Vector((v.co.x * 0.018, v.co.y * 0.045, v.co.z * 0.07))
+        if v.co.x * s < 0 and abs(v.co.y) < 0.03 and abs(v.co.z) < 0.05:
+            v.co.x *= 0.3  # inner hollow
+    part(f"ear{s}", xf(ear, t=HC + Vector((s * 0.81 * HR, 0.05 * HR, -0.02))), "skin")
+# short black hair: back and sides, with a hairline above the forehead
+hair = keep(sphere(1, 64, 32), lambda co: co.z > -0.05 and (co.y > -0.35 or co.z > 0.62))
+for v in hair.verts:
+    p = v.co.normalized()
+    v.co = Vector((p.x * 0.8 * 1.04, p.y * 0.92 * 1.04, p.z * 1.12 * 1.03)) * HR
+part("hair", xf(hair, t=HC + Vector((0, 0.004, 0.004))), "hair")
 for s in (-1, 1):
-    part(f"hatSlot{s}", xf(rbox(0.05, 0.1, 0.06, 0.012), t=HT + Vector((s * 0.36, 0, 0.03))), "hatDark")
-part("hatMark", xf(rbox(0.1, 0.006, 0.03, 0.004), t=HT + Vector((0, -0.335, 0.19))), "red")
+    part(f"burn{s}", xf(sphere(1, 12, 8), s=(0.012, 0.035, 0.07), t=HC + Vector((s * 0.79 * HR, -0.05 * HR, 0.02))), "hair")
+# hard hat sized to the head
+HT = HC + Vector((0, 0, 0.62 * HR))
+HS = HR * 1.1
+dome = keep(sphere(HS, 48, 24), lambda co: co.z >= -0.001)
+part("hatDome", xf(dome, s=(0.92, 1.05, 0.9), t=HT), "hat")
+part("hatBrim", xf(cyl(HS * 1.08, HS * 1.05, 0.03, 48), s=(0.92, 1.12, 1), t=HT + Vector((0, -0.02, 0))), "hatDark")
+peak = keep(cyl(HS * 0.72, HS * 0.64, 0.028, 32), lambda co: co.y <= 0.001)
+part("hatPeak", xf(peak, s=(1, 0.75, 1), t=HT + Vector((0, -HS * 0.98, 0.005))), "hat")
+ridge = torus(HS * 0.97, 0.024, 40, 10, math.pi)
+part("hatRidge", xf(ridge, s=(1.05, 1, 0.9), r=(math.pi / 2, 0, math.pi / 2), t=HT), "hatDark")
+for s in (-1, 1):
+    part(f"hatSlot{s}", xf(rbox(0.04, 0.08, 0.05, 0.01), t=HT + Vector((s * HS * 0.94, 0, 0.025))), "hatDark")
+part("hatMark", xf(rbox(0.08, 0.006, 0.025, 0.004), t=HT + Vector((0, -HS * 1.02, HS * 0.55))), "red")
 
 # ── torso extras ───────────────────────────────────────────────
 T = J["spine"]
 for s in (-1, 1):
-    part(f"collar{s}", xf(rbox(0.15, 0.02, 0.07, 0.012), r=(-0.7, s * 0.5, s * 0.45), t=T + Vector((s * 0.08, -0.12, 0.83))), "polo", "torso")
-    part(f"vestShoulder{s}", xf(rbox(0.13, 0.3, 0.05, 0.02), r=(0, s * 0.35, 0), t=T + Vector((s * 0.27, 0, 0.79))), "vest", "torso")
+    part(f"collar{s}", xf(rbox(0.1, 0.015, 0.06, 0.012), r=(-0.35, 0, s * 0.35), t=T + Vector((s * 0.06, -0.125, 0.86))), "polo", "torso")
+part("collarRing", xf(torus(0.108, 0.018, 32, 10), s=(1, 0.95, 1), t=T + Vector((0, 0, 0.87))), "poloDark", "torso")
 part("placket", xf(rbox(0.06, 0.015, 0.26, 0.01), t=T + Vector((0, -0.262, 0.66))), "poloDark", "torso")
 part("patch", xf(rbox(0.1, 0.012, 0.035, 0.006), t=T + Vector((-0.2, -0.285, 0.58))), "red", "torso")
 # sleeves hems
@@ -335,7 +407,7 @@ for k, s in (("L", -1), ("R", 1)):
     h = P["handEnd"]
     part(f"thumb{k}", xf(cyl(0.026, 0.022, 0.07, 10), r=(0.5, 0, -s * 0.7), t=h + Vector((-s * 0.075, -0.04, 0.06))), "skin", "hand" + k)
 
-HEAD_SCALE = 1.22
+HEAD_SCALE = 1.0
 for ob, b in parts:
     if b == "head":
         me2 = ob.data
