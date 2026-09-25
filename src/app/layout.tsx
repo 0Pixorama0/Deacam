@@ -5,6 +5,7 @@ import { Nav } from "@/components/Nav";
 import { Footer } from "@/components/Footer";
 import { Motion } from "@/components/Motion";
 import { MobileBar } from "@/components/MobileBar";
+import { SideContact } from "@/components/SideContact";
 import { company } from "@/content/site";
 
 const inter = Inter({ variable: "--font-inter", subsets: ["latin"], display: "swap", axes: ["opsz"] });
@@ -80,6 +81,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <main id="main">{children}</main>
         <Footer />
         <MobileBar />
+        <SideContact />
         <Motion />
       </body>
     </html>

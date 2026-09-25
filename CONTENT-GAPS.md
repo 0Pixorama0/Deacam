@@ -28,6 +28,8 @@ Everything on the site comes from deacam.com.au (read September 2026) or the cli
 - **Privacy and Terms pages** do not exist yet, so they are not linked.
 
 ## Before launch
+- **WhatsApp number**: the side WhatsApp button uses the main line (03) 9738 0528 as a placeholder. Confirm DEACAM's
+  WhatsApp (Business) number, or remove the button; set it in `company.whatsapp` in `src/content/site.ts`.
 - **Contact form delivery is not wired.** `src/app/contact/actions.ts` validates and logs enquiries but does not
   send email. Connect Resend, SMTP or the client's CRM to info@deacam.com.au.
 - Supply original high-resolution photography where possible (current images are the website copies, max 2500px).

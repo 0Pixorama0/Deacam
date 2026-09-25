@@ -1020,3 +1020,11 @@ html, body { overflow-x: clip; }
 .odo.is-on .odo__sym { opacity: 1; transform: none; }
 .fact__v { font-variant-numeric: tabular-nums; }
 html[data-motion="reduce"] .odo__reel { transition: none !important; }
+
+/* ── Side quick-contact stack ─────────────────────────────── */
+.sidec { position: fixed; right: 0; top: 50%; transform: translateY(-50%); z-index: 42; display: grid; gap: 2px; }
+.sidec__btn { position: relative; width: 52px; height: 52px; display: grid; place-items: center; color: #fff; background: rgba(21, 23, 26, 0.92); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border-radius: var(--r2) 0 0 var(--r2); transition: background .3s var(--ease-out), width .3s var(--ease-out); }
+.sidec__btn:hover, .sidec__btn:focus-visible { background: var(--red); }
+.sidec__tip { position: absolute; right: calc(100% + 8px); top: 50%; transform: translate(8px, -50%); white-space: nowrap; background: var(--ink); color: #fff; font-size: 13px; font-weight: 500; padding: 8px 12px; border-radius: var(--r2); opacity: 0; pointer-events: none; transition: opacity .25s, transform .35s var(--ease-out); }
+.sidec__btn:hover .sidec__tip, .sidec__btn:focus-visible .sidec__tip { opacity: 1; transform: translate(0, -50%); }
+@media (max-width: 960px) { .sidec { display: none; } }

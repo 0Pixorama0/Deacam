@@ -23,6 +23,8 @@ export const company = {
     facebook: "https://www.facebook.com/deacamelectrical/",
   },
   staffLogin: "https://deacam.maaps.com.au",
+  // TODO(client): confirm the WhatsApp number. Uses the main line until DEACAM supplies a mobile/WhatsApp Business number.
+  whatsapp: "https://wa.me/61397380528",
 };
 
 export const nav = [
