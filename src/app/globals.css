@@ -1009,3 +1009,14 @@ html, body { overflow-x: clip; }
 .lbox__nav--prev { left: 16px; }
 .lbox__nav--next { right: 16px; }
 @media (max-width: 760px) { .lbox { padding: 64px 8px; } .lbox__nav { top: auto; bottom: 12px; margin: 0; } }
+
+/* ── Odometer figures ─────────────────────────────────────── */
+.odo { display: inline-block; }
+.odo__row { display: inline-flex; align-items: center; line-height: 1.2; }
+.odo__col { display: inline-block; height: 1.2em; margin-block: -0.1em; overflow: hidden; mask-image: linear-gradient(transparent, #000 7%, #000 93%, transparent); }
+.odo__reel { display: flex; flex-direction: column; transition-property: transform; transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1); will-change: transform; }
+.odo__reel > span { height: 1.2em; line-height: 1.2em; display: block; text-align: center; }
+.odo__sym { display: inline-block; opacity: 0; transform: translateY(0.25em); transition: opacity .6s var(--ease-out), transform .8s var(--ease-out); }
+.odo.is-on .odo__sym { opacity: 1; transform: none; }
+.fact__v { font-variant-numeric: tabular-nums; }
+html[data-motion="reduce"] .odo__reel { transition: none !important; }

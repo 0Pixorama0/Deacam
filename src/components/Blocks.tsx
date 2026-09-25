@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Img } from "./Img";
+import { Odometer } from "./Odometer";
 import { Btn } from "./Btn";
 import { Arrow, ArrowUpRight, Phone } from "./Icons";
 import { company, needs } from "@/content/site";
@@ -41,7 +42,7 @@ export function Facts({ items }: { items: { v: string; k: string; count?: number
     <div className="facts" data-stagger>
       {items.map((f) => (
         <div key={f.k} className="fact">
-          <div className="fact__v">{f.count ? <span data-count={f.count}>{f.v}</span> : f.v}</div>
+          <div className="fact__v"><Odometer value={f.v} /></div>
           <div className="fact__k">{f.k}</div>
         </div>
       ))}
