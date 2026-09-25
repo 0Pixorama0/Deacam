@@ -861,13 +861,13 @@ html[data-motion="reduce"] *, html[data-motion="reduce"] *::before, html[data-mo
 html, body { overflow-x: clip; }
 
 /* ── Nav login ────────────────────────────────────────────── */
-.nav__login {
-  height: 40px; padding: 0 16px; display: inline-flex; align-items: center; border-radius: var(--r2);
-  font-size: 14px; font-weight: 500; border: 1px solid rgba(10,11,13,.18); transition: border-color .3s, background .3s;
+/* Login uses the grey from the DEACAM wordmark, so it pairs with the red CTA. */
+.nav__login, .nav.on-dark .nav__login {
+  height: 40px; padding: 0 18px; display: inline-flex; align-items: center; border-radius: var(--r2);
+  font-size: 14px; font-weight: 500; color: #fff; background: #676867; border: 1px solid #676867;
+  transition: background .3s, border-color .3s;
 }
-.nav__login:hover { border-color: currentColor; }
-.nav.on-dark .nav__login { border-color: rgba(255,255,255,.32); }
-.nav.on-dark .nav__login:hover { border-color: #fff; }
+.nav__login:hover, .nav.on-dark .nav__login:hover { background: #4f504f; border-color: #4f504f; }
 @media (max-width: 1240px) { .nav__phone { display: none; } }
 @media (max-width: 960px) { .nav__login { display: none; } }
 .mmenu__login { text-align: center; padding: 12px; color: var(--steel-light); font-size: 15px; }
