@@ -869,8 +869,7 @@ html, body { overflow-x: clip; }
 }
 .nav__login:hover, .nav.on-dark .nav__login:hover { background: #4f504f; border-color: #4f504f; }
 @media (max-width: 1240px) { .nav__phone { display: none; } }
-@media (max-width: 960px) { .nav__login { display: none; } }
-.mmenu__login { text-align: center; padding: 12px; color: var(--steel-light); font-size: 15px; }
+@media (max-width: 960px) { .nav__login { height: 36px; padding: 0 14px; font-size: 13px; } }
 
 /* ── Blog ─────────────────────────────────────────────────── */
 .blog__intro { display: grid; gap: 24px; }

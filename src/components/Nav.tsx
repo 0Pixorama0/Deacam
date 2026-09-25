@@ -111,9 +111,6 @@ export function Nav() {
           <Btn href="/contact" variant="red">
             Start a project
           </Btn>
-          <a href={company.staffLogin} className="mmenu__login" target="_blank" rel="noopener">
-            Staff login
-          </a>
         </div>
       </div>
     </>
